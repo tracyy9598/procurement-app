@@ -903,9 +903,65 @@ input, textarea { font-family: var(--font); }
   border-top: 1px solid var(--border);
   padding: 7px 10px;
   display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+}
+.chat-input-line {
+  display: flex;
   align-items: center;
   gap: 6px;
-  position: relative;
+}
+.action-chip-area {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  padding: 0 2px;
+}
+.action-chip-area.visible { display: flex; }
+.action-chip-tag {
+  background: rgba(52,199,89,0.12);
+  color: var(--green-dark);
+  border-radius: 6px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.action-chip-clear {
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.pending-file-area {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  padding: 0 2px;
+}
+.pending-file-area.visible { display: flex; }
+.pending-file-chip {
+  background: rgba(0,122,255,0.10);
+  color: #007AFF;
+  border-radius: 6px;
+  padding: 2px 9px;
+  font-size: 11px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pending-file-clear {
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
 }
 .btn-quick-action {
   flex-shrink: 0;
@@ -1027,6 +1083,7 @@ input, textarea { font-family: var(--font); }
            onclick="openQAModal('')">
     <div class="topbar-right">
       <button class="topbar-badge" id="gAuthBtn" onclick="toggleGoogleAuth()" style="cursor:pointer;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);">🔒 連結 Google</button>
+      <button class="topbar-badge" onclick="openSettingsModal()" style="cursor:pointer;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);" title="API 設定">⚙</button>
       <span class="topbar-badge" id="pendingBadge">2 項待確認</span>
       <span class="topbar-date" id="topbarDate"></span>
     </div>
@@ -1375,9 +1432,17 @@ input, textarea { font-family: var(--font); }
             <!-- Quick action dropdown -->
             <div class="qa-dropdown" id="qaDropdown">
               <div class="qa-group-label">溝通</div>
-              <div class="qa-item" onclick="pickAction('寫 email — 下單 / 改單 / 追貨 / 追文件')">
-                <span class="qa-item-name">寫 email</span>
-                <span class="qa-item-hint">下單・改單・追貨・追文件</span>
+              <div class="qa-item" onclick="pickAction('下訂單')">
+                <span class="qa-item-name">下訂單</span>
+                <span class="qa-item-hint">上傳手寫訂單 → 擬 email 給廠商</span>
+              </div>
+              <div class="qa-item" onclick="pickAction('追問 ETA / ETD')">
+                <span class="qa-item-name">追問 ETA / ETD</span>
+                <span class="qa-item-hint">擬 email 詢問出貨時間</span>
+              </div>
+              <div class="qa-item" onclick="pickAction('追要 full doc')">
+                <span class="qa-item-name">追要 full doc</span>
+                <span class="qa-item-hint">擬 email 向廠商催全套文件</span>
               </div>
               <div class="qa-divider"></div>
               <div class="qa-group-label">文件審查</div>
@@ -1405,14 +1470,30 @@ input, textarea { font-family: var(--font); }
               </div>
             </div>
 
-            <button class="btn-quick-action" id="qaBtn" onclick="toggleQA()">
-              快捷動作 <span class="qa-chev" id="qaChev">▴</span>
-            </button>
-            <button class="btn-attach" onclick="triggerFileUpload()" title="上傳文件">📎</button>
-            <input class="chat-input" id="chatInput" placeholder="寫備注，或選快捷動作…"
-              onkeydown="sendChatOnEnter(event)">
-            <button class="btn-send" onclick="sendChat()">→</button>
-            <input type="file" id="fileInput" style="display:none" onchange="handleFileUpload(event)">
+            <!-- Selected action chip -->
+            <div class="action-chip-area" id="actionChipArea">
+              <span class="action-chip-tag" id="actionChipTag"></span>
+              <button class="action-chip-clear" onclick="clearAction()" title="取消">×</button>
+            </div>
+
+            <!-- Pending file attachment -->
+            <div class="pending-file-area" id="pendingFileArea">
+              <span style="font-size:13px">📄</span>
+              <span class="pending-file-chip" id="pendingFileName"></span>
+              <button class="pending-file-clear" onclick="clearPendingFile()" title="移除附檔">×</button>
+            </div>
+
+            <!-- Input line -->
+            <div class="chat-input-line">
+              <button class="btn-attach" onclick="triggerFileUpload()" title="上傳文件">📎</button>
+              <button class="btn-quick-action" id="qaBtn" onclick="toggleQA()">
+                快捷動作 <span class="qa-chev" id="qaChev">▾</span>
+              </button>
+              <input class="chat-input" id="chatInput" placeholder="寫備注，或選快捷動作…"
+                onkeydown="sendChatOnEnter(event)">
+              <button class="btn-send" onclick="sendChat()">→</button>
+              <input type="file" id="fileInput" style="display:none">
+            </div>
           </div>
         </div>
 
@@ -1534,6 +1615,29 @@ input, textarea { font-family: var(--font); }
     </div>
     <div class="modal-foot">
       <button class="btn btn-primary" onclick="closeChangelogModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS MODAL ────────────────────────── -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal" style="width:420px;">
+    <div class="modal-head">
+      <span class="modal-title">⚙ API 設定</span>
+      <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--ink-2);display:block;margin-bottom:6px;">Anthropic API Key</label>
+        <input id="anthropicKeyInput" type="password" placeholder="sk-ant-…"
+               style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);">
+        <div style="margin-top:5px;font-size:11px;color:var(--ink-3);">僅存在本機 localStorage，不進 git。只在 localhost 使用。</div>
+      </div>
+      <div id="settingsStatus" style="font-size:12px;color:var(--green-mid);display:none;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeSettingsModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveSettings()">儲存</button>
     </div>
   </div>
 </div>
@@ -2904,18 +3008,38 @@ async function writeToSheets() {
 // ════════════════════════════════════════════════════════
 
 let qaOpen = true;
+let _selectedAction = null;
+let _pendingFile = null;
 function toggleQA() {
   qaOpen = !qaOpen;
   document.getElementById('qaDropdown').classList.toggle('open', qaOpen);
   document.getElementById('qaChev').textContent = qaOpen ? '▴' : '▾';
 }
 
-function pickAction(action) {
-  document.getElementById('chatInput').value = action;
-  document.getElementById('chatInput').focus();
+function pickAction(action, uploadFirst = false) {
+  _selectedAction = action;
+  document.getElementById('actionChipTag').textContent = action;
+  document.getElementById('actionChipArea').classList.add('visible');
   qaOpen = false;
   document.getElementById('qaDropdown').classList.remove('open');
   document.getElementById('qaChev').textContent = '▾';
+  if (uploadFirst) {
+    triggerFileUpload();
+  } else {
+    document.getElementById('chatInput').focus();
+  }
+}
+
+function clearAction() {
+  _selectedAction = null;
+  document.getElementById('actionChipArea').classList.remove('visible');
+  document.getElementById('actionChipTag').textContent = '';
+}
+
+function clearPendingFile() {
+  _pendingFile = null;
+  document.getElementById('pendingFileArea').classList.remove('visible');
+  document.getElementById('pendingFileName').textContent = '';
 }
 
 function sendChatOnEnter(e) { if (e.key === 'Enter') sendChat(); }
@@ -2923,37 +3047,285 @@ function sendChatOnEnter(e) { if (e.key === 'Enter') sendChat(); }
 function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
-  if (!text) return;
+  if (!text && !_selectedAction && !_pendingFile) return;
   const order = state.orders.find(o => o.id === state.currentOrderId);
   if (!order) return;
-  const time = nowStamp();
-  order.chatLog.push({ type: 'me', text, time });
 
-  // Action routing
+  // 有附檔但沒選 action → 問文件類型並歸檔
+  let docType = null;
+  if (_pendingFile && !_selectedAction) {
+    docType = prompt('這份文件是什麼？\nPI / CI / BL / PL / 水單 / 報單 / 手寫訂單');
+    if (!docType) return; // 取消
+    docType = docType.trim();
+  }
+
+  const action = _selectedAction;
+  const pendingFile = _pendingFile;
+
+  const fullText = action
+    ? (action + (text ? '　' + text : ''))
+    : (docType ? `📎 ${docType}` + (text ? '　' + text : '') : text);
+  const time = nowStamp();
+  const meEntry = { type: 'me', text: fullText, time };
+  if (pendingFile) meEntry.attach = { chip: docType || action || '附件', name: pendingFile.name };
+  order.chatLog.push(meEntry);
+
+  // 無 action 純上傳：歸檔到 order.documents
+  if (pendingFile && !action && docType) {
+    const today = new Date();
+    const dateStr = `${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+    const existing = order.documents.find(d => d.type === docType);
+    if (existing) {
+      existing.name = pendingFile.name;
+      existing.date = dateStr;
+      existing.status = 'ok';
+    } else {
+      order.documents.push({ type: docType, name: pendingFile.name, date: dateStr, status: 'ok' });
+    }
+  }
+
+  clearAction();
+  clearPendingFile();
+  input.value = '';
+
+  // Action routing（用 action 變數比對）
   let sysReply = null;
-  if (/審\s*PI/.test(text)) {
+  if (/審\s*PI/.test(action || fullText)) {
     expandAcc('acc-docs');
     sysReply = '請上傳 PI 文件 → 點擊下方 📎';
-  } else if (/審全套文件/.test(text)) {
+  } else if (/審全套文件/.test(action || fullText)) {
     expandAcc('acc-docs');
     sysReply = '請依序確認 CI / BL / PL / 原產地證 — 缺件以紅色標記';
-  } else if (/上傳水單/.test(text)) {
+  } else if (/上傳水單/.test(action || fullText)) {
     sysReply = '開啟水單上傳';
     setTimeout(() => triggerUploadRemittance(), 300);
-  } else if (/做\s*Landing\s*Cost|成本結算/i.test(text)) {
+  } else if (/做\s*Landing\s*Cost|成本結算/i.test(action || fullText)) {
     expandAcc('acc-lc');
     sysReply = `已展開 Landing Cost — tab：${order.sheetsTabName || '（待建立）'}`;
-  } else if (/更新\s*Open\s*Orders/.test(text)) {
+  } else if (/更新\s*Open\s*Orders/.test(action || fullText)) {
     sysReply = '此功能需要 Google Sheets 授權（Stop 8 後可用）';
-  } else if (/寫\s*email/i.test(text)) {
-    sysReply = '請選擇情境：下單 / 改單 / 追貨 / 追文件（後續整合 LLM 自動草擬）';
+  } else if (/下訂單/.test(action)) {
+    _runAsyncEmail(order, () => draftOrderEmail(order, pendingFile, text));
+    return;
+  } else if (/追問\s*ETA/.test(action)) {
+    _runAsyncEmail(order, () => draftEtaEmail(order));
+    return;
+  } else if (/追要\s*full\s*doc/i.test(action)) {
+    _runAsyncEmail(order, () => draftFullDocEmail(order));
+    return;
   }
 
   if (sysReply) {
     order.chatLog.push({ type: 'sys', text: sysReply, time: nowStamp() });
   }
+  // 若有純上傳歸檔，重畫詳情頁更新文件清單
+  if (pendingFile && !action && docType) {
+    renderOrderDetail(order);
+  } else {
+    renderChat(order.chatLog);
+  }
+}
+
+async function _runAsyncEmail(order, draftFn) {
+  const loadingEntry = { type: 'sys', text: '⏳ AI 處理中…', time: nowStamp(), _loading: true };
+  order.chatLog.push(loadingEntry);
   renderChat(order.chatLog);
-  input.value = '';
+  try {
+    const result = await draftFn();
+    loadingEntry.text = result;
+    delete loadingEntry._loading;
+  } catch (e) {
+    loadingEntry.text = `❌ 錯誤：${e.message}`;
+    delete loadingEntry._loading;
+  }
+  saveOrdersRegistry();
+  renderChat(order.chatLog);
+}
+
+// ── Settings modal ──────────────────────────
+function openSettingsModal() {
+  const key = localStorage.getItem('anthropic_api_key') || '';
+  document.getElementById('anthropicKeyInput').value = key;
+  document.getElementById('settingsStatus').style.display = 'none';
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+function saveSettings() {
+  const key = document.getElementById('anthropicKeyInput').value.trim();
+  if (key) localStorage.setItem('anthropic_api_key', key);
+  else localStorage.removeItem('anthropic_api_key');
+  const st = document.getElementById('settingsStatus');
+  st.textContent = key ? '✅ 已儲存' : '🗑 已清除';
+  st.style.display = 'block';
+  setTimeout(closeSettingsModal, 800);
+}
+
+// ── Claude API helper ────────────────────────
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function callClaude(messages, system) {
+  const key = localStorage.getItem('anthropic_api_key');
+  if (!key) throw new Error('尚未設定 Anthropic API Key（點 ⚙ 設定）');
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-calls': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-7',
+      max_tokens: 1024,
+      system,
+      messages,
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API 錯誤 ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.content?.[0]?.text || '';
+}
+
+// ── Build vendor context for prompts ─────────
+function getVendorContext(vendorName) {
+  const entry = lookupVendorInDoc(vendorName);
+  return entry?.raw?.trim() || '（採購文件中無此廠商注意事項）';
+}
+
+// ── Async draft functions ────────────────────
+async function draftOrderEmail(order, file, userNotes) {
+  const orderId = order.id || 'TXXX';
+  const vendorName = order.vendor || '（廠商）';
+  const vendorNotes = getVendorContext(vendorName);
+
+  if (!file) {
+    return `📧 下訂單 email 草稿\n\n` +
+      `【主旨】\nNew Order ${orderId}\n\n` +
+      `⚠️ 請附上手寫訂單圖片再發送，這樣我才能 OCR 抽品項。`;
+  }
+  if (!localStorage.getItem('anthropic_api_key')) {
+    return `⚠️ 尚未設定 Anthropic API Key。\n請點右上角 ⚙ 輸入 key，再重試。`;
+  }
+
+  const b64 = await fileToBase64(file);
+  const mediaType = file.type || 'image/jpeg';
+
+  const system = `你是一個台灣進出口採購助理，幫用戶把手寫訂單轉成給廠商的下單 email。
+廠商注意事項（這個廠商 ${vendorName} 的規則，需全部合併進「另請備註」，不省略，由用戶看完自行刪減）：
+${vendorNotes}
+
+輸出格式（只輸出下面這個格式，不要多餘說明）：
+【主旨】
+New Order ${orderId}
+
+【內文】
+Dear [從注意事項或常識推斷聯絡人名字，不知道就寫 [聯絡人]]，
+
+我司要下定 [櫃型若手寫訂單有寫，否則留空白] 櫃訂單 ${orderId}：
+[品項名稱 A（用廠商熟悉的產品名，若無法對應就保留原始編號）] x [重量]kg（[棧板數若有]，[客訂不可改若有]）
+...（依此類推）
+
+另請備註：
+- [手寫訂單上的用戶特別備注（原樣保留，逐條列出）]
+- [廠商注意事項（全部列出，不省略）]
+
+再麻煩您安排。
+
+Best regards，
+Tracy`;
+
+  const userMsg = userNotes
+    ? `手寫訂單如圖。用戶額外補充：${userNotes}`
+    : '手寫訂單如圖，請依格式產出 email。';
+
+  const text = await callClaude([{
+    role: 'user',
+    content: [
+      { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+      { type: 'text', text: userMsg },
+    ],
+  }], system);
+
+  return `📧 下訂單 email 草稿（AI 產出，請確認後複製）\n\n${text}`;
+}
+
+async function draftEtaEmail(order) {
+  const orderId = order.id || 'TXXX';
+  const vendorName = order.vendor || '（廠商）';
+  const vendorNotes = getVendorContext(vendorName);
+
+  if (!localStorage.getItem('anthropic_api_key')) {
+    const contact = '（聯絡人）';
+    return `📧 追問 ETA/ETD email 草稿\n\n` +
+      `【主旨】\nETA/ETD 確認 — ${orderId}\n\n` +
+      `【內文】\nDear ${contact}，\n\n` +
+      `想請問訂單 ${orderId} 目前出貨進度，\n` +
+      `煩請提供預計出廠日（ETD）及預計到港日（ETA），以便我們安排後續作業。\n\n謝謝！\n\nBest regards，\nTracy\n\n` +
+      `─────\n提示：設定 API Key（⚙）可自動帶入${vendorName}聯絡人`;
+  }
+
+  const system = `你是台灣進出口採購助理。根據廠商注意事項推斷聯絡人與溝通語言（中/英），產出追問 ETA/ETD 的 email。
+廠商 ${vendorName} 注意事項：${vendorNotes}
+只輸出：
+【主旨】
+ETA/ETD 確認 — ${orderId}
+
+【內文】
+（email 正文，語氣禮貌明確，簽名 Tracy）`;
+
+  const text = await callClaude([{
+    role: 'user',
+    content: `請幫我寫追問訂單 ${orderId} 的 ETA/ETD email 給廠商 ${vendorName}。`,
+  }], system);
+
+  return `📧 追問 ETA/ETD email 草稿（AI 產出）\n\n${text}`;
+}
+
+async function draftFullDocEmail(order) {
+  const orderId = order.id || 'TXXX';
+  const vendorName = order.vendor || '（廠商）';
+  const vendorNotes = getVendorContext(vendorName);
+  const have = new Set((order.documents || []).map(d => d.type));
+  const missing = ['PI','CI','BL','PL','水單','報單'].filter(t => !have.has(t));
+  const missingStr = missing.length ? missing.join(' / ') : '（文件齊全，無需催收）';
+
+  if (!localStorage.getItem('anthropic_api_key')) {
+    return `📧 追要 full doc email 草稿\n\n` +
+      `【主旨】\n文件催收 — ${orderId}\n\n` +
+      `【內文】\nDear （聯絡人），\n\n` +
+      `訂單 ${orderId} 目前進入結案作業，尚缺以下文件：\n${missingStr}\n\n` +
+      `煩請盡快提供，以利後續報關流程。\n\n謝謝！\n\nBest regards，\nTracy\n\n` +
+      `─────\n提示：設定 API Key（⚙）可自動帶入${vendorName}聯絡人`;
+  }
+
+  const system = `你是台灣進出口採購助理。根據廠商注意事項推斷聯絡人與溝通語言，產出催收文件 email。
+廠商 ${vendorName} 注意事項：${vendorNotes}
+尚缺文件：${missingStr}
+只輸出：
+【主旨】
+文件催收 — ${orderId}
+
+【內文】
+（email 正文，說明訂單進入結案，列缺件，請盡快提供，簽名 Tracy）`;
+
+  const text = await callClaude([{
+    role: 'user',
+    content: `請幫我寫催收訂單 ${orderId} 全套文件的 email 給廠商 ${vendorName}。`,
+  }], system);
+
+  return `📧 追要 full doc email 草稿（AI 產出）\n\n${text}`;
 }
 
 function expandAcc(id) {
@@ -2964,7 +3336,26 @@ function expandAcc(id) {
   acc.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function triggerFileUpload() { document.getElementById('fileInput').click(); }
+let _fileHandler = null;
+function triggerFileUpload() {
+  const fi = document.getElementById('fileInput');
+  fi.value = '';
+  if (_fileHandler) fi.removeEventListener('change', _fileHandler);
+  _fileHandler = (e) => {
+    fi.removeEventListener('change', _fileHandler);
+    _fileHandler = null;
+    const file = e.target.files[0];
+    fi.value = '';
+    if (!file) return;
+    // 一律先存 pending，送出時才決定怎麼處理
+    _pendingFile = file;
+    document.getElementById('pendingFileName').textContent = file.name;
+    document.getElementById('pendingFileArea').classList.add('visible');
+    document.getElementById('chatInput').focus();
+  };
+  fi.addEventListener('change', _fileHandler);
+  fi.click();
+}
 
 function handleFileUpload(event) {
   const file = event.target.files[0];
@@ -2972,7 +3363,7 @@ function handleFileUpload(event) {
   if (!file) return;
   const order = state.orders.find(o => o.id === state.currentOrderId);
   if (!order) return;
-  const type = prompt('這份文件是什麼？\nPI / CI / BL / PL / 水單 / 報單');
+  const type = prompt('這份文件是什麼？\nPI / CI / BL / PL / 水單 / 報單 / 手寫訂單');
   if (!type) return;
   const t = type.trim();
   const today = new Date();
