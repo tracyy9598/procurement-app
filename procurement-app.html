@@ -1,0 +1,4548 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>採購管理系統</title>
+<script src="https://accounts.google.com/gsi/client" async defer onload="autoSignIn()"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root {
+  --font: 'DM Sans', system-ui, sans-serif;
+  --green-dark:  #1a6b52;
+  --green-mid:   #1d9e75;
+  --green-light: #e1f5ee;
+  --amber:       #ef9f27;
+  --amber-light: #faeeda;
+  --amber-dark:  #633806;
+  --blue:        #378add;
+  --blue-light:  #e6f1fb;
+  --blue-dark:   #0c447c;
+  --red:         #a32d2d;
+  --red-light:   #fcebeb;
+  --pink:        #c06070;
+  --pink-light:  #fbeaf0;
+  --ink:         #1a1916;
+  --ink-2:       #5f5e5a;
+  --ink-3:       #9c9a92;
+  --bg:          #f4f2ed;
+  --surface:     #ffffff;
+  --border:      #e2e0d8;
+  --border-2:    #cccab8;
+  --edited-bg:   #fef9e7;
+  --sidebar-bg:  #f0ede6;
+  --topbar-bg:   #1a1916;
+}
+
+/* ─── RESET ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); font-size: 13px; color: var(--ink); background: var(--bg); height: 100vh; overflow: hidden; }
+button { font-family: var(--font); cursor: pointer; }
+input, textarea { font-family: var(--font); }
+
+/* ─── SHELL ──────────────────────────────────────────── */
+.app-shell {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: 44px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── TOPBAR ─────────────────────────────────────────── */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--topbar-bg);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.topbar-logo {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.topbar-sep { width: 1px; height: 16px; background: rgba(255,255,255,0.12); }
+.topbar-search {
+  flex: 1;
+  max-width: 320px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.topbar-search:focus { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); }
+.topbar-search::placeholder { color: rgba(255,255,255,0.3); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.topbar-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--amber);
+  color: var(--amber-dark);
+  padding: 2px 9px;
+  border-radius: 99px;
+  letter-spacing: 0.02em;
+}
+.topbar-date { font-size: 11px; color: rgba(255,255,255,0.3); }
+
+/* ─── SIDEBAR ────────────────────────────────────────── */
+.sidebar {
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sb-scroll { flex: 1; overflow-y: auto; padding-bottom: 8px; }
+.sb-scroll::-webkit-scrollbar { width: 3px; }
+.sb-scroll::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+
+.sb-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 10px 14px 4px;
+}
+.sb-divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* Home button */
+.nav-home {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  margin: 8px 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: all 0.1s;
+}
+.nav-home:hover, .nav-home.active { background: var(--green-light); color: var(--green-dark); border-color: var(--green-mid); }
+
+/* Order nav items */
+.nav-order {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  margin: 1px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.1s;
+}
+.nav-order:hover { background: var(--surface); }
+.nav-order.active { background: var(--amber-light); border-color: rgba(239,159,39,0.3); }
+.nav-order-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.nav-order-info { flex: 1; min-width: 0; }
+.nav-order-name { font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-order-serial { font-size: 10px; color: var(--ink-3); }
+.nav-order-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 99px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Tool nav items */
+.nav-tool {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  margin: 1px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ink-2);
+  transition: background 0.1s;
+}
+.nav-tool:hover { background: var(--surface); color: var(--ink); }
+.nav-tool.active { background: var(--blue-light); color: var(--blue-dark); }
+
+.sb-bottom { flex-shrink: 0; border-top: 1px solid var(--border); padding: 8px; }
+.nav-archived {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ink-3);
+  transition: all 0.1s;
+}
+.nav-archived:hover { background: var(--surface); color: var(--ink-2); }
+
+.btn-new-order {
+  width: calc(100% - 0px);
+  margin: 4px 0 2px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px dashed var(--border-2);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s;
+  text-align: center;
+}
+.btn-new-order:hover { border-color: var(--green-mid); color: var(--green-dark); background: var(--green-light); }
+
+/* Status pill colors */
+.pill-pay    { background: var(--amber-light); color: var(--amber-dark); }
+.pill-doc    { background: var(--blue-light);  color: var(--blue-dark); }
+.pill-transit{ background: var(--green-light); color: var(--green-dark); }
+.pill-pi     { background: var(--pink-light);  color: #72243e; }
+.pill-order  { background: var(--bg);          color: var(--ink-3); }
+
+/* ─── MAIN AREA ──────────────────────────────────────── */
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ─── PAGE ROUTER ────────────────────────────────────── */
+.page { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.page.active { display: flex; }
+
+/* ════════════════════════════════════════════════════════
+   HOME PAGE
+   ════════════════════════════════════════════════════════ */
+.home-page { overflow-y: auto; }
+
+/* KPI strip */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 16px 18px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.kpi-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.kpi-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin-bottom: 5px; }
+.kpi-val { font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--ink); margin-bottom: 3px; }
+.kpi-val.green { color: var(--green-dark); }
+.kpi-val.dim { color: var(--border-2); font-size: 18px; }
+.kpi-sub { font-size: 10px; color: var(--ink-3); }
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 18px;
+  flex-shrink: 0;
+}
+.tab-btn {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  color: var(--ink-3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+.tab-btn.active { color: var(--green-dark); border-bottom-color: var(--green-mid); font-weight: 600; }
+.tab-btn:hover:not(.active) { color: var(--ink-2); }
+.tab-bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.search-input {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  width: 140px;
+  outline: none;
+}
+.search-input:focus { border-color: var(--border-2); }
+
+/* Tab content */
+.tab-content { display: none; flex: 1; overflow-y: auto; padding: 16px 18px; }
+.tab-content.active { display: block; }
+
+/* ── Open Orders Table ── */
+.orders-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.orders-table { width: 100%; border-collapse: collapse; }
+.orders-table th {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  padding: 9px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  white-space: nowrap;
+}
+.orders-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-size: 12px;
+}
+.orders-table tr:last-child td { border-bottom: none; }
+.orders-table tbody tr { cursor: pointer; transition: background 0.1s; }
+.orders-table tbody tr:hover td { background: var(--bg); }
+.td-po { font-weight: 600; font-size: 12px; }
+.td-serial { font-size: 10px; color: var(--ink-3); margin-top: 1px; }
+.eta-warn { color: var(--amber-dark); font-weight: 600; }
+.status-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.td-note { font-size: 11px; color: var(--ink-3); max-width: 180px; }
+
+/* ── Today Tab ── */
+.today-wrap { display: flex; flex-direction: column; gap: 10px; }
+.today-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ts-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.ts-emoji { font-size: 14px; }
+.ts-title { font-size: 12px; font-weight: 600; flex: 1; }
+.ts-hint { font-size: 10px; color: var(--ink-3); }
+.ts-body { padding: 4px 0; }
+.ts-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  group: true;
+}
+.ts-item:last-child { border-bottom: none; }
+.ts-item-text {
+  flex: 1;
+  font-size: 12px;
+  color: var(--ink);
+  outline: none;
+  min-height: 18px;
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin: -1px -4px;
+}
+.ts-item-text:focus { background: var(--edited-bg); }
+.ts-item-del {
+  opacity: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--red);
+  font-size: 10px;
+  transition: opacity 0.1s;
+}
+.ts-item:hover .ts-item-del { opacity: 1; }
+.ts-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--border);
+}
+.ts-add-input {
+  flex: 1;
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  outline: none;
+  color: var(--ink);
+}
+.ts-add-input:focus { border-color: var(--border-2); }
+.btn-add-item {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-2);
+  background: transparent;
+  color: var(--ink-2);
+  transition: all 0.1s;
+}
+.btn-add-item:hover { background: var(--bg); }
+.btn-generate-list {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: var(--green-dark);
+  color: white;
+  border: none;
+  transition: opacity 0.15s;
+}
+.btn-generate-list:hover { opacity: 0.88; }
+
+/* ─── LIST MODAL ─────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,25,22,0.5);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: 12px;
+  width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.modal-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+.modal-title { font-size: 13px; font-weight: 600; flex: 1; }
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--ink-3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+.modal-close:hover { background: var(--bg); }
+.modal-body { flex: 1; overflow-y: auto; padding: 16px 18px; }
+.list-preview {
+  font-size: 12px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  font-family: var(--font);
+  color: var(--ink);
+}
+.modal-foot {
+  padding: 10px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ════════════════════════════════════════════════════════
+   ORDER DETAIL PAGE
+   ════════════════════════════════════════════════════════ */
+.order-page { overflow: hidden; }
+
+/* Fixed detail header */
+.detail-header {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 13px 18px;
+}
+.dh-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.dh-po { font-size: 15px; font-weight: 700; color: var(--ink); }
+.dh-serial { font-size: 11px; color: var(--ink-3); font-weight: 400; margin-left: 6px; }
+.dh-meta { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+.dh-status { margin-left: auto; }
+.dh-status-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+/* Progress track */
+.prog-track { display: flex; align-items: flex-start; }
+.prog-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
+.prog-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: calc(50% + 9px);
+  right: calc(-50% + 9px);
+  height: 1px;
+  background: var(--border-2);
+}
+.prog-step.done::after { background: var(--green-mid); }
+.prog-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-2);
+  background: var(--surface);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+.prog-step.done .prog-dot { background: var(--green-mid); border-color: var(--green-mid); }
+.prog-step.active .prog-dot { border-color: var(--green-mid); }
+.prog-step.active .prog-dot::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--green-mid);
+}
+.prog-label { font-size: 9px; color: var(--ink-3); text-align: center; white-space: nowrap; }
+.prog-step.done .prog-label { color: var(--green-mid); }
+.prog-step.active .prog-label { color: var(--green-dark); font-weight: 700; }
+
+/* Scrollable accordion zone */
+.scroll-zone {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scroll-zone::-webkit-scrollbar { width: 4px; }
+.scroll-zone::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+
+/* Accordion */
+.acc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.acc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+.acc-head:hover { background: var(--bg); }
+.acc-title { font-size: 12px; font-weight: 600; flex: 1; }
+.acc-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+.tag-warn    { background: var(--amber-light); color: var(--amber-dark); }
+.tag-ok      { background: var(--green-light); color: var(--green-dark); }
+.tag-miss    { background: var(--red-light);   color: var(--red); }
+.tag-blue    { background: var(--blue-light);  color: var(--blue-dark); }
+.tag-gray    { background: var(--bg);          color: var(--ink-3); }
+.acc-chev { font-size: 10px; color: var(--ink-3); transition: transform 0.2s; }
+.acc-chev.open { transform: rotate(180deg); }
+.acc-body {
+  display: none;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+.acc-body.open { display: flex; min-height: 40px; }
+.acc-inner { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+/* Field rows */
+.field-row { display: flex; align-items: baseline; gap: 10px; }
+.field-label { font-size: 11px; color: var(--ink-2); min-width: 96px; flex-shrink: 0; }
+.field-val { font-size: 12px; font-weight: 500; }
+.field-val.editable {
+  border-bottom: 1px dashed var(--border-2);
+  padding-bottom: 1px;
+  cursor: text;
+  outline: none;
+  min-width: 60px;
+}
+.field-val.editable:focus { border-bottom-color: var(--green-mid); background: var(--edited-bg); border-radius: 2px; }
+.field-val.warn { color: var(--amber-dark); }
+.field-val.flag { color: var(--red); }
+.field-val.computed { color: var(--green-dark); font-weight: 600; }
+.field-source { font-size: 10px; color: var(--ink-3); font-style: italic; }
+.change-tag {
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--amber-light);
+  color: var(--amber-dark);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+
+/* Red flag */
+.flag-field { display: flex; align-items: center; gap-: 6px; }
+.flag-q { color: var(--red); font-weight: 700; font-size: 14px; margin-right: 4px; }
+.flag-hint { font-size: 10px; color: var(--red); font-style: italic; }
+
+/* Doc list */
+.doc-list { display: flex; flex-direction: column; }
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-item:last-child { border-bottom: none; }
+.doc-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chip-pi  { background: var(--amber-light); color: var(--amber-dark); }
+.chip-ci  { background: var(--green-light); color: var(--green-dark); }
+.chip-bl  { background: var(--blue-light);  color: var(--blue-dark); }
+.chip-pl  { background: var(--bg);          color: var(--ink-2); }
+.chip-miss{ background: var(--red-light);   color: var(--red); border: 1px dashed var(--red); }
+.doc-info { flex: 1; }
+.doc-name { font-size: 11px; font-weight: 500; }
+.doc-sub  { font-size: 10px; color: var(--ink-3); }
+.doc-st {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+.dst-ok   { background: var(--green-light); color: var(--green-dark); }
+.dst-miss { background: var(--red-light);   color: var(--red); }
+.dst-pend { background: var(--amber-light); color: var(--amber-dark); }
+
+/* Landing cost */
+.lc-sub-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  padding: 10px 14px 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.lc-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.lc-row:last-child { border-bottom: none; }
+.lc-label { flex: 2; font-size: 11px; color: var(--ink-2); }
+.lc-source { flex: 1.5; font-size: 10px; color: var(--ink-3); font-style: italic; }
+.lc-val { flex: 1.5; text-align: right; font-size: 12px; font-weight: 500; }
+.lc-val.editable { border-bottom: 1px dashed var(--border-2); cursor: text; outline: none; }
+.lc-val.computed { color: var(--green-dark); font-weight: 600; }
+.lc-val.flag-val { color: var(--red); }
+.lc-total-row {
+  display: flex;
+  align-items: center;
+  padding: 9px 14px;
+  background: var(--green-light);
+  border-top: 1px solid var(--border);
+}
+.lc-total-label { flex: 1; font-size: 12px; font-weight: 700; color: var(--green-dark); }
+.lc-total-val { font-size: 14px; font-weight: 700; color: var(--green-dark); }
+
+.sheets-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--green-light);
+  border-bottom: 1px solid var(--border);
+}
+.sheets-banner-text { flex: 1; font-size: 11px; color: var(--green-dark); line-height: 1.5; }
+.btn-sheets {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--green-dark);
+  color: white;
+  border: none;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btn-sheets:hover { opacity: 0.88; }
+
+.prod-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 4px 0; }
+.prod-table th {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.prod-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
+.prod-table tr:last-child td { border-bottom: none; }
+.editable-cell {
+  border-bottom: 1px dashed var(--border-2);
+  outline: none;
+  min-width: 50px;
+  display: inline-block;
+  padding: 1px 2px;
+}
+.editable-cell:focus { background: var(--edited-bg); border-radius: 2px; }
+
+.lc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.lc-note { font-size: 11px; color: var(--ink-3); }
+.btn-write-sheets {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--green-dark);
+  color: white;
+  border: none;
+  transition: all 0.15s;
+}
+.btn-write-sheets:disabled { background: var(--border-2); color: var(--ink-3); cursor: not-allowed; }
+.btn-write-sheets:not(:disabled):hover { opacity: 0.88; }
+
+/* Accordion footer */
+.acc-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* Buttons */
+.btn {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-2);
+  background: transparent;
+  color: var(--ink-2);
+  transition: all 0.1s;
+}
+.btn:hover { background: var(--bg); color: var(--ink); }
+.btn-primary {
+  background: var(--green-dark);
+  color: white;
+  border-color: var(--green-dark);
+}
+.btn-primary:hover { opacity: 0.88; }
+
+/* ─── FIXED CHAT ─────────────────────────────────────── */
+.chat-resizer {
+  flex-shrink: 0;
+  height: 6px;
+  background: var(--border);
+  cursor: ns-resize;
+  position: relative;
+}
+.chat-resizer:hover { background: var(--green-mid); }
+.chat-resizer::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 2px;
+  background: var(--ink-3);
+  border-radius: 1px;
+  opacity: 0.5;
+}
+.chat-fixed {
+  flex-shrink: 0;
+  height: 280px;
+  background: var(--surface);
+  border-top: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.chat-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.chat-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  flex: 1;
+}
+.chat-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.chat-feed::-webkit-scrollbar { width: 3px; }
+.chat-feed::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+.chat-msg { display: flex; flex-direction: column; gap: 2px; max-width: 86%; }
+.chat-msg.sys { align-self: flex-start; }
+.chat-msg.me  { align-self: flex-end; }
+.chat-bubble {
+  padding: 7px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.chat-msg.sys .chat-bubble {
+  background: var(--bg);
+  color: var(--ink-2);
+  border-radius: 2px 8px 8px 8px;
+}
+.chat-msg.me .chat-bubble {
+  background: var(--green-dark);
+  color: #e8f8f2;
+  border-radius: 8px 2px 8px 8px;
+}
+.chat-time { font-size: 10px; color: var(--ink-3); padding: 0 3px; }
+.chat-msg.me .chat-time { text-align: right; }
+.chat-attach {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-top: 3px;
+}
+.attach-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-size: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.attach-name { font-size: 11px; color: var(--ink-2); }
+
+/* Chat input row */
+.chat-input-row {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.btn-quick-action {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border-2);
+  background: var(--bg);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  transition: all 0.1s;
+}
+.btn-quick-action:hover { border-color: var(--green-mid); color: var(--green-dark); }
+#order-notes-editor:empty::before { content: attr(data-placeholder); color: var(--ink-3); }
+.qa-chev { font-size: 9px; color: var(--ink-3); }
+.btn-attach {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  border: 1px solid var(--border-2);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+.btn-attach:hover { border-color: var(--border-2); color: var(--ink-2); }
+.chat-input {
+  flex: 1;
+  height: 32px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.chat-input:focus { border-color: var(--border-2); }
+.btn-send {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  border: none;
+  background: var(--green-dark);
+  color: white;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+.btn-send:hover { opacity: 0.88; }
+
+/* Quick action dropdown */
+.qa-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(26,25,22,0.14);
+  width: 230px;
+  overflow: hidden;
+  z-index: 50;
+  display: none;
+}
+.qa-dropdown.open { display: block; }
+.qa-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+  padding: 8px 12px 4px;
+}
+.qa-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.qa-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.qa-item:hover { background: var(--bg); }
+.qa-item-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+.qa-item-hint { font-size: 10px; color: var(--ink-3); margin-top: 1px; }
+
+/* ─── SOP / VENDOR PAGE ──────────────────────────────── */
+.content-page { overflow-y: auto; padding: 20px 24px; }
+.content-page h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--ink); }
+.content-page p { font-size: 13px; color: var(--ink-2); line-height: 1.7; margin-bottom: 12px; }
+
+/* ─── UTIL ───────────────────────────────────────────── */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ══════════════════════════════════════════
+       TOPBAR
+       ══════════════════════════════════════════ -->
+  <header class="topbar">
+    <span class="topbar-logo">採購管理</span>
+    <div class="topbar-sep"></div>
+    <input class="topbar-search" placeholder="快問快答：WD 聯絡人是誰？（按 Enter 開啟）" id="quickAsk"
+           onkeydown="if(event.key==='Enter'){ openQAModal(this.value); this.value=''; }"
+           onclick="openQAModal('')">
+    <div class="topbar-right">
+      <button class="topbar-badge" id="gAuthBtn" onclick="toggleGoogleAuth()" style="cursor:pointer;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);">🔒 連結 Google</button>
+      <span class="topbar-badge" id="pendingBadge">2 項待確認</span>
+      <span class="topbar-date" id="topbarDate"></span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       SIDEBAR
+       ══════════════════════════════════════════ -->
+  <nav class="sidebar">
+    <div class="sb-scroll">
+
+      <!-- Home -->
+      <div class="nav-home active" data-page="home" onclick="navTo('home', this)">
+        🏠 首頁總覽
+      </div>
+
+      <div class="sb-divider"></div>
+      <div class="sb-label">進行中訂單</div>
+
+      <!-- Order list — rendered by JS -->
+      <div id="orderNavList"></div>
+
+      <div style="padding: 4px 8px 8px;">
+        <button class="btn-new-order" onclick="openNewOrderModal()">＋ 新增訂單</button>
+        <button class="btn" style="width:100%;margin-top:4px;font-size:10px;color:var(--ink-3);" onclick="confirmBackfillFromLC()" title="一次性：把 LC sheet 裡所有 T 開頭 tab 倒過來建立訂單條目（已刪除的不會復活）">⬇ 從 LC 匯入歷史（一次性）</button>
+      </div>
+
+      <div class="sb-divider"></div>
+      <div class="sb-label">採購 SOP</div>
+      <div class="nav-tool" data-page="sop" onclick="navTo('sop', this)">📋 採購進口 SOP</div>
+
+      <div class="sb-divider"></div>
+      <div class="sb-label">各廠商注意事項</div>
+      <!-- Vendor list — rendered by JS -->
+      <div id="vendorNavList"></div>
+
+    </div>
+
+    <!-- Archived — pinned to bottom -->
+    <div class="sb-bottom">
+      <div class="nav-archived" data-page="archived" onclick="navTo('archived', this)">
+        📁 已結案訂單
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════
+       MAIN CONTENT
+       ══════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ── HOME PAGE ────────────────────────── -->
+    <div class="page active" id="page-home">
+      <div class="home-page" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+
+        <!-- KPI -->
+        <div class="kpi-strip">
+          <div class="kpi-card">
+            <div class="kpi-label">本月採購額</div>
+            <div class="kpi-val green" id="kpi-monthly">—</div>
+            <!-- TODO: load from Google Sheets Order Status -->
+            <div class="kpi-sub">載入中…</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">KPI 2</div>
+            <div class="kpi-val dim">—</div>
+            <div class="kpi-sub">待定</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">KPI 3</div>
+            <div class="kpi-val dim">—</div>
+            <div class="kpi-sub">待定</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">KPI 4</div>
+            <div class="kpi-val dim">—</div>
+            <div class="kpi-sub">待定</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">KPI 5</div>
+            <div class="kpi-val dim">—</div>
+            <div class="kpi-sub">待定</div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchHomeTab('open', this)">Open Orders</button>
+          <button class="tab-btn" onclick="switchHomeTab('today', this)">今日進度</button>
+          <div class="tab-bar-right">
+            <input class="search-input" placeholder="搜尋訂單…" oninput="filterOrders(this.value)">
+            <button class="btn-generate-list hidden" id="generateListBtn" onclick="openListModal()">產生今日 List</button>
+          </div>
+        </div>
+
+        <!-- Tab: Open Orders -->
+        <div class="tab-content active" id="tab-open" style="overflow-y:auto;">
+          <div class="orders-table-wrap">
+            <table class="orders-table">
+              <thead>
+                <tr>
+                  <th>合約號 / 廠商</th>
+                  <th>下單日</th>
+                  <th>ETA</th>
+                  <th>進度</th>
+                  <th>付款狀態</th>
+                  <th>備注</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody">
+                <!-- TODO: render from state.orders -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Today Progress -->
+        <div class="tab-content" id="tab-today" style="overflow-y:auto;">
+          <div class="today-wrap">
+
+            <!-- 💚 完成 -->
+            <div class="today-section">
+              <div class="ts-head">
+                <span class="ts-emoji">💚</span>
+                <span class="ts-title">完成（今日完成）</span>
+                <span class="ts-hint">自動彙整</span>
+              </div>
+              <div class="ts-body" id="today-done">
+                <!-- TODO: auto-generate from orders where action completed today -->
+              </div>
+              <div class="ts-add">
+                <input class="ts-add-input" placeholder="手動補充今日完成事項…" id="add-done-input"
+                  onkeydown="addTodayItem('done', event)">
+                <button class="btn-add-item" onclick="addTodayItemBtn('done')">＋ 新增</button>
+              </div>
+            </div>
+
+            <!-- 💙 待完成 -->
+            <div class="today-section">
+              <div class="ts-head">
+                <span class="ts-emoji">💙</span>
+                <span class="ts-title">待完成（近期需追蹤）</span>
+              </div>
+              <div class="ts-body" id="today-pending">
+                <!-- TODO: auto-generate from orders with pending flags -->
+              </div>
+              <div class="ts-add">
+                <input class="ts-add-input" placeholder="手動新增待辦…" id="add-pending-input"
+                  onkeydown="addTodayItem('pending', event)">
+                <button class="btn-add-item" onclick="addTodayItemBtn('pending')">＋ 新增</button>
+              </div>
+            </div>
+
+            <!-- ❤️ 備注 -->
+            <div class="today-section">
+              <div class="ts-head">
+                <span class="ts-emoji">❤️</span>
+                <span class="ts-title">備注（新注意事項）</span>
+              </div>
+              <div class="ts-body" id="today-notes">
+                <!-- TODO: auto-generate from orders with recent notes -->
+              </div>
+              <div class="ts-add">
+                <input class="ts-add-input" placeholder="手動新增備注…" id="add-notes-input"
+                  onkeydown="addTodayItem('notes', event)">
+                <button class="btn-add-item" onclick="addTodayItemBtn('notes')">＋ 新增</button>
+              </div>
+            </div>
+
+            <!-- 🧡 進行中 -->
+            <div class="today-section">
+              <div class="ts-head">
+                <span class="ts-emoji">🧡</span>
+                <span class="ts-title">進行中（未結案進度更新）</span>
+                <span class="ts-hint">自動從訂單狀態產生</span>
+              </div>
+              <div class="ts-body" id="today-inprogress">
+                <!-- TODO: auto-generate from all active orders -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── ORDER DETAIL PAGE ─────────────────── -->
+    <div class="page" id="page-order">
+      <div class="order-page" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+
+        <!-- Fixed header -->
+        <div class="detail-header" id="orderDetailHeader">
+          <div class="dh-top">
+            <div>
+              <div>
+                <span class="dh-po" id="dh-po">—</span>
+                <span class="dh-serial" id="dh-serial"></span>
+              </div>
+              <div class="dh-meta" id="dh-meta"></div>
+            </div>
+            <div class="dh-status" style="display:flex;gap:8px;align-items:center;">
+              <span class="dh-status-pill status-pill" id="dh-status-pill"></span>
+              <div style="position:relative;">
+                <button class="btn" onclick="toggleOrderStatusMenu(event)" style="font-size:11px;">⚙ 案件狀態 ▾</button>
+                <div id="orderStatusMenu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:white;border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.1);min-width:180px;z-index:100;">
+                  <button class="btn" style="display:block;width:100%;text-align:left;border:0;border-radius:0;padding:10px 14px;background:transparent;" onclick="toggleArchivedStatus()" id="orderStatusToggleBtn">標記為已結案</button>
+                  <div style="border-top:1px solid var(--border);"></div>
+                  <button class="btn" style="display:block;width:100%;text-align:left;border:0;border-radius:0;padding:10px 14px;background:transparent;color:var(--red);" onclick="deleteCurrentOrder()">🗑 刪除訂單</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="prog-track" id="progTrack">
+            <!-- rendered by JS based on order status -->
+          </div>
+        </div>
+
+        <!-- Scrollable accordion zone -->
+        <div class="scroll-zone" id="scrollZone">
+
+          <!-- ① 訂單內容 -->
+          <div class="acc" id="acc-content">
+            <div class="acc-head" onclick="toggleAcc(this)">
+              <span class="acc-title">訂單內容</span>
+              <span class="acc-tag" id="tag-content">—</span>
+              <span class="acc-chev">▾</span>
+            </div>
+            <div class="acc-body">
+              <div class="acc-inner" id="acc-content-body">
+                <!-- TODO: render from order.items, order.ciAmount etc -->
+                <!-- Fields: 合約號, 廠商, 每個品項(可編輯), CI金額, 付款方式 -->
+                <!-- On edit: highlight with --edited-bg, add change-tag -->
+              </div>
+              <div class="acc-footer">
+                <button class="btn" onclick="showChangelog()">查看變更歷程</button>
+                <button class="btn btn-primary" onclick="saveOrderContent()">儲存修改</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ② 付款狀態 -->
+          <div class="acc" id="acc-payment">
+            <div class="acc-head" onclick="toggleAcc(this)">
+              <span class="acc-title">付款狀態</span>
+              <span class="acc-tag" id="tag-payment">—</span>
+              <span class="acc-chev">▾</span>
+            </div>
+            <div class="acc-body">
+              <div class="acc-inner" id="acc-payment-body">
+                <!-- TODO: render payment rows -->
+                <!-- Auto-calc: 應付尾款 = CI - 已付 (or CI - 30% if 30/70) -->
+                <!-- Special case: if 改單, 應付尾款 = new CI total - 已付 -->
+              </div>
+              <div class="acc-footer">
+                <button class="btn btn-primary" onclick="triggerUploadRemittance()">
+                  上傳付款水單 → 自動記帳
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ③ 文件清單 -->
+          <div class="acc" id="acc-docs">
+            <div class="acc-head" onclick="toggleAcc(this)">
+              <span class="acc-title">文件清單</span>
+              <span class="acc-tag" id="tag-docs">—</span>
+              <span class="acc-chev">▾</span>
+            </div>
+            <div class="acc-body">
+              <div class="doc-list" id="acc-docs-body">
+                <!-- TODO: render from order.documents -->
+                <!-- Each: chip + name + date/amount + status pill -->
+                <!-- Missing docs: red dashed chip, dst-miss pill -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ④ 成本結算 -->
+          <div class="acc" id="acc-lc">
+            <div class="acc-head" onclick="toggleAcc(this)">
+              <span class="acc-title">成本結算（Landing Cost）</span>
+              <span class="acc-tag" id="tag-lc">待開始</span>
+              <span class="acc-chev">▾</span>
+            </div>
+            <div class="acc-body">
+
+              <!-- Sheets link banner -->
+              <div class="sheets-banner">
+                <span style="font-size:18px;">📊</span>
+                <div class="sheets-banner-text">
+                  系統已在 Landing Cost 建立 <strong id="lc-tab-name">—</strong> tab。
+                  填完後可直接寫入，或先到 Sheets 核對。
+                </div>
+                <button class="btn-sheets" onclick="openSheetsTab()">開啟 Sheets ↗</button>
+              </div>
+
+              <div id="lc-content"></div>
+
+            </div>
+          </div>
+
+          <!-- ⑤ 備注（分類路由：本機 / 未付貨款 / 廠商規則） -->
+          <div class="acc" id="acc-notes">
+            <div class="acc-head" onclick="toggleAcc(this)">
+              <span class="acc-title">📝 備注</span>
+              <span class="acc-tag" id="tag-notes">—</span>
+              <span class="acc-chev">▾</span>
+            </div>
+            <div class="acc-body">
+              <div class="acc-inner" style="padding:10px 14px;">
+                <div style="display:flex;gap:14px;font-size:11px;color:var(--ink-2);margin-bottom:8px;flex-wrap:wrap;">
+                  <label style="cursor:pointer;"><input type="radio" name="note-target" value="local" checked onchange="onNoteTargetChange()"> 本機暫存（草稿）</label>
+                  <label style="cursor:pointer;"><input type="radio" name="note-target" value="os" onchange="onNoteTargetChange()"> 此單備註 → 未付貨款 sheet</label>
+                  <label style="cursor:pointer;"><input type="radio" name="note-target" value="vendor" onchange="onNoteTargetChange()"> 廠商新規則 → 廠商注意事項</label>
+                </div>
+                <div id="order-notes-editor"
+                     contenteditable="true"
+                     style="min-height:80px;padding:10px 12px;font-size:13px;line-height:1.7;outline:none;white-space:pre-wrap;border:1px solid var(--border);border-radius:6px;background:var(--surface);"
+                     onblur="saveOrderNotes()"
+                     data-placeholder="這筆訂單的備注…"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                  <span id="note-hint" style="font-size:11px;color:var(--ink-3);">本機暫存：失焦自動保存到瀏覽器（重整保留，換機消失）</span>
+                  <button id="note-submit-btn" class="btn btn-primary" style="display:none;" onclick="submitOrderNote()">寫入</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /scroll-zone -->
+
+        <!-- Resize handle (drag to adjust chat height) -->
+        <div class="chat-resizer" id="chatResizer" title="拖曳調整聊天區高度"></div>
+
+        <!-- Fixed chat box -->
+        <div class="chat-fixed">
+          <div class="chat-header">
+            <span class="chat-title" id="chatTitle">操作記錄 & 備注</span>
+          </div>
+          <div class="chat-feed" id="chatFeed">
+            <!-- TODO: render from order.chatLog -->
+            <!-- sys msgs: bg grey, me msgs: bg green-dark -->
+          </div>
+          <div class="chat-input-row">
+
+            <!-- Quick action dropdown -->
+            <div class="qa-dropdown" id="qaDropdown">
+              <div class="qa-group-label">溝通</div>
+              <div class="qa-item" onclick="pickAction('寫 email — 下單 / 改單 / 追貨 / 追文件')">
+                <span class="qa-item-name">寫 email</span>
+                <span class="qa-item-hint">下單・改單・追貨・追文件</span>
+              </div>
+              <div class="qa-divider"></div>
+              <div class="qa-group-label">文件審查</div>
+              <div class="qa-item" onclick="pickAction('審 PI')">
+                <span class="qa-item-name">審 PI</span>
+                <span class="qa-item-hint">核對數量・金額・貨櫃重量</span>
+              </div>
+              <div class="qa-item" onclick="pickAction('審全套文件')">
+                <span class="qa-item-name">審全套文件</span>
+                <span class="qa-item-hint">CI・BL・PL・原產地證</span>
+              </div>
+              <div class="qa-divider"></div>
+              <div class="qa-group-label">財務</div>
+              <div class="qa-item" onclick="pickAction('上傳水單')">
+                <span class="qa-item-name">上傳水單</span>
+                <span class="qa-item-hint">自動更新未付貨款 & 外幣 tab</span>
+              </div>
+              <div class="qa-item" onclick="pickAction('做 Landing Cost')">
+                <span class="qa-item-name">做 Landing Cost</span>
+                <span class="qa-item-hint">開新 tab，填入成本計算</span>
+              </div>
+              <div class="qa-item" onclick="pickAction('更新 Open Orders')">
+                <span class="qa-item-name">更新 Open Orders</span>
+                <span class="qa-item-hint">填入品項・數量到 Sheet</span>
+              </div>
+            </div>
+
+            <button class="btn-quick-action" id="qaBtn" onclick="toggleQA()">
+              快捷動作 <span class="qa-chev" id="qaChev">▴</span>
+            </button>
+            <button class="btn-attach" onclick="triggerFileUpload()" title="上傳文件">📎</button>
+            <input class="chat-input" id="chatInput" placeholder="寫備注，或選快捷動作…"
+              onkeydown="sendChatOnEnter(event)">
+            <button class="btn-send" onclick="sendChat()">→</button>
+            <input type="file" id="fileInput" style="display:none" onchange="handleFileUpload(event)">
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /page-order -->
+
+    <!-- ── SOP PAGE ──────────────────────────── -->
+    <div class="page" id="page-sop">
+      <div class="content-page">
+        <h2>📋 採購進口 SOP</h2>
+        <!-- TODO: load from Google Doc or local markdown -->
+        <!-- Support: keyword search (Ctrl+F or in-page), contenteditable sections, localStorage save -->
+        <p style="color:var(--ink-3);">載入中…</p>
+      </div>
+    </div>
+
+    <!-- ── VENDOR PAGE ───────────────────────── -->
+    <div class="page" id="page-vendor">
+      <div class="content-page">
+        <h2 id="vendorPageTitle">廠商注意事項</h2>
+        <!-- TODO: load vendor-specific notes from data.vendors -->
+        <!-- Support: keyword search, contenteditable, localStorage save -->
+        <p style="color:var(--ink-3);">載入中…</p>
+      </div>
+    </div>
+
+    <!-- ── ARCHIVED PAGE ─────────────────────── -->
+    <div class="page" id="page-archived">
+      <div class="content-page" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="tab-bar" style="flex-shrink:0;">
+          <span style="font-size:13px;font-weight:600;padding:12px 18px;color:var(--ink);">已結案訂單</span>
+          <div class="tab-bar-right">
+            <input class="search-input" placeholder="搜尋…">
+          </div>
+        </div>
+        <div style="overflow-y:auto;padding:16px 18px;flex:1;">
+          <div class="orders-table-wrap">
+            <table class="orders-table">
+              <thead>
+                <tr>
+                  <th>合約號 / 廠商</th>
+                  <th>下單日</th>
+                  <th>結案日</th>
+                  <th>貨櫃</th>
+                  <th>最終均價</th>
+                </tr>
+              </thead>
+              <tbody id="archivedTableBody">
+                <!-- TODO: render archived orders -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── QA MODAL ──────────────────────────────── -->
+<div class="modal-overlay" id="qaModal">
+  <div class="modal" style="width:560px;max-height:85vh;display:flex;flex-direction:column;">
+    <div class="modal-head">
+      <span class="modal-title">💬 快問快答</span>
+      <button class="btn" onclick="reloadSheetsCache()" style="margin-left:auto;margin-right:8px;font-size:11px;">🔄 重載 Sheets</button>
+      <button class="modal-close" onclick="closeQAModal()">✕</button>
+    </div>
+    <div class="modal-body" id="qaFeed" style="flex:1;overflow-y:auto;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:8px;">
+    </div>
+    <div class="chat-input-row" style="border-top:1px solid var(--border);background:var(--bg);">
+      <button class="btn-attach" onclick="document.getElementById('qaFileInput').click()" title="上傳文件">📎</button>
+      <input class="chat-input" id="qaInput" placeholder="問問題或貼產品編號 / 合約號 / 廠商名…（按兩次 Enter 送出）" onkeydown="qaEnterHandler(event)">
+      <button class="btn-send" onclick="sendQA()">→</button>
+      <input type="file" id="qaFileInput" style="display:none" onchange="handleQAUpload(event)">
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW ORDER MODAL ───────────────────────── -->
+<div class="modal-overlay" id="newOrderModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">＋ 新增訂單</span>
+      <button class="modal-close" onclick="closeNewOrderModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row"><span class="field-label">廠商</span>
+        <input class="search-input" id="no-vendor" placeholder="如 WANDA / CSM / 駿佑">
+      </div>
+      <div class="field-row"><span class="field-label">合約號</span>
+        <input class="search-input" id="no-id" placeholder="海外 T 開頭，如 T048；國內留 —">
+      </div>
+      <div class="field-row"><span class="field-label">流水號</span>
+        <input class="search-input" id="no-serial" placeholder="6 碼，如 000025">
+      </div>
+      <p style="color:var(--ink-3); font-size:11px; padding:0 14px;">
+        付款方式、貨櫃、ETD/ETA 等資訊待 PI 收到後再補入訂單詳情頁。
+      </p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeNewOrderModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitNewOrder()">建立訂單</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHANGELOG MODAL ───────────────────────── -->
+<div class="modal-overlay" id="changelogModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="changelogModalTitle">📝 變更歷程</span>
+      <button class="modal-close" onclick="closeChangelogModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <table class="orders-table" id="changelogTable">
+        <thead><tr><th>日期</th><th>來源</th><th>欄位</th><th>變更</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" onclick="closeChangelogModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TODAY LIST MODAL ─────────────────────── -->
+<div class="modal-overlay" id="listModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="listModalTitle">📋 今日進度 List</span>
+      <button class="modal-close" onclick="closeListModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <pre class="list-preview" id="listPreview"></pre>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeListModal()">關閉</button>
+      <button class="btn" onclick="copyList()">📋 複製</button>
+      <button class="btn btn-primary" onclick="printList()">🖨 列印</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// STATE — replace with real data / API calls
+// ════════════════════════════════════════════════════════
+
+const state = {
+  currentOrderId: null,
+  qaOpen: true,
+
+  // Loaded from Google Sheets after auth (Order Status / Open Orders tab)
+  orders: [],
+
+  // Loaded from Landing Cost Sheet 廠商一覽表 tab after auth
+  vendors: [],
+
+  // Today progress — persisted in localStorage
+  today: {
+    done:       [], // { id, text }
+    pending:    [],
+    notes:      [],
+    inprogress: [], // auto-generated
+  },
+};
+
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
+
+const CONFIG = {
+  LANDING_COST_SHEET_ID: '1-BiNWW_Vv-FKA2Z9hbjpUn5H2cXyrAnZXxFizVZBt2I',
+  ORDER_STATUS_SHEET_ID: '1ItHrcHZD5yMoI2eP_flPr6LRSPxeoN74nCltNNZDSEE',
+  // TODO: set Google OAuth client ID
+  GOOGLE_CLIENT_ID: '304027026778-98spu2al2nqs950cfukk4t4sj885dr9s.apps.googleusercontent.com',
+  DEFAULT_CHARGES: {
+    container40: 1368,
+    container20: 684,
+    truck: 6500,
+    customs_doc: 2600,
+    customs_doc_china: 2750,
+  },
+};
+
+// ════════════════════════════════════════════════════════
+// STATUS MAP
+// ════════════════════════════════════════════════════════
+
+const STATUS_MAP = {
+  ordered:         { label: '已下單',  pill: 'pill-order',   dot: '#9c9a92' },
+  pi_review:       { label: 'PI審查',  pill: 'pill-pi',      dot: '#c06070' },
+  payment_30:      { label: '30%待付', pill: 'pill-pay',     dot: '#ef9f27' },
+  shipped:         { label: '在途',    pill: 'pill-transit', dot: '#1d9e75' },
+  pending_payment: { label: '待付尾款',pill: 'pill-pay',     dot: '#ef9f27' },
+  doc_review:      { label: '文件審查',pill: 'pill-doc',     dot: '#378add' },
+  cost_settlement: { label: '成本結算',pill: 'pill-blue',    dot: '#378add' },
+  archived:        { label: '已歸檔',  pill: 'pill-order',   dot: '#9c9a92' },
+};
+
+const PROGRESS_STEPS = [
+  { key: 'ordered',         label: '下單' },
+  { key: 'pi_review',       label: 'PI確認' },
+  { key: 'payment_30',      label: '30%付款' },
+  { key: 'shipped',         label: '裝船' },
+  { key: 'pending_payment', label: '尾款' },
+  { key: 'doc_review',      label: '文件審查' },
+  { key: 'cost_settlement', label: '成本結算' },
+  { key: 'archived',        label: '歸檔' },
+];
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTopbarDate();
+  // 從 localStorage registry 載入訂單（不再從 LC sheet 倒推）
+  state.orders = loadOrdersRegistry();
+  renderSidebar();
+  renderOrdersTable();
+  loadTodayFromStorage();
+  renderTodaySections();
+
+  // Default: QA dropdown open for demo
+  document.getElementById('qaDropdown').classList.add('open');
+
+  initChatResizer();
+});
+
+function initChatResizer() {
+  const handle = document.getElementById('chatResizer');
+  const chat = document.querySelector('.chat-fixed');
+  if (!handle || !chat) return;
+  const saved = parseInt(localStorage.getItem('chat-height') || '', 10);
+  if (saved && saved >= 120 && saved <= 800) chat.style.height = saved + 'px';
+
+  let startY = 0, startH = 0, dragging = false;
+  const onMove = (e) => {
+    if (!dragging) return;
+    const dy = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+    let h = startH - dy;
+    h = Math.max(120, Math.min(800, h));
+    chat.style.height = h + 'px';
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    localStorage.setItem('chat-height', parseInt(chat.style.height, 10));
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('touchend', onUp);
+  };
+  const onDown = (e) => {
+    dragging = true;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    startH = chat.getBoundingClientRect().height;
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    e.preventDefault();
+  };
+  handle.addEventListener('mousedown', onDown);
+  handle.addEventListener('touchstart', onDown, { passive: false });
+}
+
+// ════════════════════════════════════════════════════════
+// ORDERS REGISTRY — 本地 source-of-truth
+// ════════════════════════════════════════════════════════
+// 訂單存在 localStorage（'orders-registry-v1'），不從 LC sheet 倒推。
+// 連結 Google 只載入 Sheets cache（給 QA、charges 等用），不重建 state.orders。
+// 從 LC 倒入歷史 = 一次性動作，需用戶按按鈕，結果存進 registry 後不再自動跑。
+
+const ORDERS_REGISTRY_KEY = 'orders-registry-v1';
+const DELETED_ORDERS_KEY = 'deleted-order-ids-v1';
+const LC_BACKFILL_DONE_KEY = 'lc-backfill-done-v1';
+
+function loadOrdersRegistry() {
+  try {
+    const raw = localStorage.getItem(ORDERS_REGISTRY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.warn('orders-registry 損毀，視為空:', e);
+    return [];
+  }
+}
+
+function saveOrdersRegistry() {
+  // 過濾掉被標記刪除的（保險）
+  const deleted = getDeletedOrderIds();
+  const toSave = (state.orders || []).filter(o => !deleted.has(o.id) && !deleted.has(o.serialNo));
+  localStorage.setItem(ORDERS_REGISTRY_KEY, JSON.stringify(toSave));
+}
+
+function getDeletedOrderIds() {
+  try {
+    const raw = localStorage.getItem(DELETED_ORDERS_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch { return new Set(); }
+}
+
+function markOrderDeleted(...keys) {
+  const set = getDeletedOrderIds();
+  keys.filter(Boolean).forEach(k => set.add(k));
+  localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify([...set]));
+}
+
+function setTopbarDate() {
+  const d = new Date();
+  const days = ['日','一','二','三','四','五','六'];
+  document.getElementById('topbarDate').textContent =
+    `${d.getFullYear()} / ${String(d.getMonth()+1).padStart(2,'0')} / ${String(d.getDate()).padStart(2,'0')}（${days[d.getDay()]}）`;
+}
+
+// ════════════════════════════════════════════════════════
+// SIDEBAR
+// ════════════════════════════════════════════════════════
+
+function renderSidebar() {
+  const list = document.getElementById('orderNavList');
+  const active = state.orders.filter(o => o.status !== 'archived');
+  if (!active.length) {
+    list.innerHTML = `<div style="padding:14px 12px;font-size:11px;color:var(--ink-3);line-height:1.6;">
+      ${_accessToken ? '尚無進行中訂單' : '請先點右上「🔒 連結 Google」載入訂單'}
+    </div>`;
+  } else {
+  list.innerHTML = active
+    .map(o => {
+      const s = STATUS_MAP[o.status] || {};
+      return `
+        <div class="nav-order" data-order="${o.id}" onclick="openOrder('${o.id}', this)">
+          <div class="nav-order-dot" style="background:${s.dot}"></div>
+          <div class="nav-order-info">
+            <div class="nav-order-name">${o.id} · ${o.vendor}</div>
+            <div class="nav-order-serial">${o.serialNo}</div>
+          </div>
+          <span class="nav-order-pill ${s.pill}">${s.label}</span>
+        </div>`;
+    }).join('');
+  }
+
+  const vl = document.getElementById('vendorNavList');
+  const overseas = getOverseasVendors();
+  const domestic = getDomesticVendors();
+  if (!overseas.length && !domestic.length) {
+    vl.innerHTML = `<div style="padding:8px 12px;font-size:11px;color:var(--ink-3);">${state.docCache ? '採購文件中無廠商資料' : '尚未載入採購文件'}</div>`;
+  } else {
+    const renderGroup = (label, list) => list.length ? `
+      <details class="vendor-group">
+        <summary style="font-size:11px;color:var(--ink-3);padding:6px 12px;cursor:pointer;user-select:none;">${label}（${list.length}）</summary>
+        ${list.map(v => `
+          <div class="nav-tool" data-vendor="${escapeHtml(v.name)}" onclick="openVendor('${String(v.name).replace(/'/g,"\\'")}', this)">
+            🏭 ${escapeHtml(v.name)}
+          </div>`).join('')}
+      </details>` : '';
+    vl.innerHTML = renderGroup('🌏 國外廠商', overseas) + renderGroup('🇹🇼 國內廠商', domestic);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════
+
+function navTo(pageId, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId)?.classList.add('active');
+  document.querySelectorAll('.nav-home, .nav-tool, .nav-order, .nav-archived').forEach(n => n.classList.remove('active'));
+  el?.classList.add('active');
+  if (pageId === 'archived') renderArchivedOrders();
+  if (pageId === 'sop') renderSOP();
+}
+
+function renderArchivedOrders() {
+  const tbody = document.getElementById('archivedTableBody');
+  const archived = state.orders.filter(o => o.status === 'archived');
+  if (!archived.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--ink-3);padding:30px;">尚無已結案訂單</td></tr>';
+    return;
+  }
+  tbody.innerHTML = archived.map(o => {
+    const finalAvg = o.landingCost?.avgRows?.length
+      ? (o.landingCost.avgRows.reduce((s, r) => s + (r.prevAvg || 0), 0) / o.landingCost.avgRows.length).toFixed(2)
+      : '—';
+    const idEsc = String(o.id).replace(/'/g, "\\'");
+    return `
+      <tr style="cursor:pointer;" onclick="openOrder('${idEsc}', null)">
+        <td><div class="td-po">${o.id} · ${o.vendor}</div><div class="td-serial">${o.serialNo || ''}</div></td>
+        <td>${o.etd ? o.etd.slice(5).replace('-','/') : '—'}</td>
+        <td>${o.archivedAt || '—'}</td>
+        <td>${o.containerType || '—'}</td>
+        <td>${finalAvg}</td>
+      </tr>`;
+  }).join('');
+}
+
+function openOrder(orderId, el) {
+  state.currentOrderId = orderId;
+  const order = state.orders.find(o => o.id === orderId);
+  if (!order) return;
+  navTo('order', el);
+  renderOrderDetail(order);
+}
+
+// Vendor notes / SOP source-of-truth = the procurement Google Doc (loaded after auth).
+// 不再 hardcode 任何廠商或 SOP 內容。
+
+function openVendor(name, el) {
+  document.getElementById('vendorPageTitle').textContent = `🏭 ${name} — 注意事項`;
+  navTo('vendor', el);
+  renderVendorNotes(name);
+}
+
+function renderVendorNotes(name) {
+  const page = document.getElementById('page-vendor').querySelector('.content-page');
+  const key = `vendor-notes-${name}`;
+  const saved = localStorage.getItem(key);
+  const fromDoc = lookupVendorInDoc(name);
+  // Saved = user-edited HTML; fromDoc.html = doc-rendered HTML
+  const content = saved != null
+    ? saved
+    : (fromDoc?.html || (state.docCache
+        ? '<p style="color:var(--ink-3);">（採購文件中找不到此廠商，點此編輯）</p>'
+        : '<p style="color:var(--ink-3);">（尚未載入採購文件，請先連結 Google）</p>'));
+  const safeName = escapeHtml(name);
+  const safeNameJs = String(name).replace(/'/g, "\\'");
+  page.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;">
+      <h2 id="vendorPageTitle" style="margin:0;">🏭 ${safeName} — 注意事項</h2>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-3);">
+        <span>上次更新：${formatDocTs()}</span>
+        <button class="btn" onclick="if(confirm('放棄本機編輯，從 Doc 重抓？')){localStorage.removeItem('vendor-notes-${safeNameJs}');refreshProcurementDoc();}" title="放棄本機編輯改用 Doc 內容">↺ 還原 Doc 版本</button>
+        <button class="btn" onclick="refreshProcurementDoc()" title="從 Google Doc 重抓">🔄 重抓 Doc</button>
+      </div>
+    </div>
+    <div class="notes-edit" contenteditable="true"
+         oninput="saveVendorNotes('${safeNameJs}', this.innerHTML)"
+         style="min-height:300px; padding:14px; border:1px dashed var(--border-2); border-radius:6px; line-height:1.7; font-size:13px;">${content}</div>
+    <p style="color:var(--ink-3); font-size:11px; margin-top:8px;">直接點擊編輯，自動存入本機（不回寫 Doc）。「↺ 還原 Doc 版本」會清除本機編輯。</p>`;
+}
+
+function saveVendorNotes(name, text) {
+  localStorage.setItem(`vendor-notes-${name}`, text);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatDocTs() {
+  if (!state.docCache?.loadedAt) return '—';
+  const d = new Date(state.docCache.loadedAt);
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function renderSOP() {
+  const page = document.getElementById('page-sop').querySelector('.content-page');
+  const header = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;">
+      <h2 style="margin:0;">📋 採購進口 SOP</h2>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-3);">
+        <span>上次更新：${formatDocTs()}</span>
+        <button class="btn" onclick="refreshProcurementDoc()" title="從 Google Doc 重抓">🔄 重抓 Doc</button>
+      </div>
+    </div>`;
+
+  if (!state.docCache?.tabs) {
+    page.innerHTML = header + `<p style="color:var(--ink-3);">尚未載入採購文件，請先連結 Google。</p>`;
+    return;
+  }
+  const { parent, children } = getSOPSubtabs();
+  if (!parent && !children.length) {
+    page.innerHTML = header + `<p style="color:var(--ink-3);">採購文件中找不到「${SOP_PARENT_TAB}」分頁。</p>`;
+    return;
+  }
+
+  const sectionStyle = `style="white-space:pre-wrap;padding:14px;line-height:1.7;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:0 0 6px 6px;border-top:none;"`;
+  const summaryStyle = `style="cursor:pointer;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-weight:600;font-size:13px;user-select:none;"`;
+
+  const sections = [];
+  if (parent && parent.text && parent.text.trim()) {
+    sections.push(`
+      <details open style="margin-bottom:8px;">
+        <summary ${summaryStyle}>${escapeHtml(parent.title)}（總覽）</summary>
+        <div ${sectionStyle}>${escapeHtml(parent.text)}</div>
+      </details>`);
+  }
+  for (const ch of children) {
+    sections.push(`
+      <details style="margin-bottom:8px;">
+        <summary ${summaryStyle}>${escapeHtml(ch.title)}</summary>
+        <div ${sectionStyle}>${escapeHtml(ch.text || '（此分頁無內容）')}</div>
+      </details>`);
+  }
+
+  page.innerHTML = header + sections.join('') + `
+    <p style="color:var(--ink-3); font-size:11px; margin-top:12px;">內容來自 Google Doc 的「${SOP_PARENT_TAB}」分頁與其子分頁。點各標題可展開／收起。</p>`;
+}
+
+function saveSOP(text) {
+  localStorage.setItem('sop-content', text);
+}
+
+// ════════════════════════════════════════════════════════
+// HOME: OPEN ORDERS TABLE
+// ════════════════════════════════════════════════════════
+
+function renderOrdersTable(filter = '') {
+  const tbody = document.getElementById('ordersTableBody');
+  const today = new Date();
+  if (!state.orders.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-3);">
+      ${_accessToken ? '尚無訂單資料' : '請點右上「🔒 連結 Google」載入訂單'}
+    </td></tr>`;
+    return;
+  }
+  tbody.innerHTML = state.orders
+    .filter(o => o.status !== 'archived')
+    .filter(o => !filter || `${o.id} ${o.vendor} ${o.serialNo}`.toLowerCase().includes(filter.toLowerCase()))
+    .map(o => {
+      const s = STATUS_MAP[o.status] || {};
+      const etaDate = o.eta ? new Date(o.eta) : null;
+      const daysLeft = etaDate ? Math.ceil((etaDate - today) / 86400000) : 999;
+      const etaStr = o.eta ? o.eta.slice(5).replace('-', '/') : '—';
+      const etaCls = daysLeft <= 14 ? 'eta-warn' : '';
+      const etaWarn = daysLeft <= 14 ? ' ⚠' : '';
+      return `
+        <tr onclick="openOrder('${o.id}', document.querySelector('[data-order=\\'${o.id}\\']'))">
+          <td>
+            <div class="td-po">${o.id} · ${o.vendor}</div>
+            <div class="td-serial">${o.serialNo}${o.containerType ? ' · ' + o.containerType : ''}</div>
+          </td>
+          <td>${o.etd ? o.etd.slice(5).replace('-','/') : '—'}</td>
+          <td class="${etaCls}">${etaStr}${etaWarn}</td>
+          <td><span class="status-pill ${s.pill}">${s.label}</span></td>
+          <td>${renderPaymentPill(o)}</td>
+          <td class="td-note">${getOrderNote(o)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderPaymentPill(o) {
+  if (o.paymentTerms === '100%') {
+    return o.paidAmount >= o.ciAmount && o.ciAmount > 0
+      ? `<span class="status-pill pill-transit">100% 已付</span>`
+      : `<span class="status-pill pill-pay">未付款</span>`;
+  }
+  if (o.paidAmount <= 0) return `<span class="status-pill pill-pay">未付款</span>`;
+  const paid30 = Math.round(o.piAmount * 0.3);
+  if (o.paidAmount >= paid30 && o.paidAmount < o.ciAmount)
+    return `<span class="status-pill pill-pay">30% 已付</span>`;
+  if (o.paidAmount >= o.ciAmount)
+    return `<span class="status-pill pill-transit">已付清</span>`;
+  return `<span class="status-pill pill-pay">部分已付</span>`;
+}
+
+function getOrderNote(o) {
+  // TODO: pull from latest chatLog entry or order note field
+  return '';
+}
+
+function filterOrders(val) {
+  renderOrdersTable(val);
+}
+
+// ════════════════════════════════════════════════════════
+// HOME: TAB SWITCH
+// ════════════════════════════════════════════════════════
+
+function switchHomeTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('generateListBtn').classList.toggle('hidden', tab !== 'today');
+}
+
+// ════════════════════════════════════════════════════════
+// TODAY PROGRESS
+// ════════════════════════════════════════════════════════
+
+function loadTodayFromStorage() {
+  // TODO: persist today's data per-day in localStorage
+  // key: `today-${yyyy-mm-dd}`
+  const saved = localStorage.getItem(`today-${todayKey()}`);
+  if (saved) Object.assign(state.today, JSON.parse(saved));
+  else autoGenerateTodayItems();
+}
+
+function saveTodayToStorage() {
+  localStorage.setItem(`today-${todayKey()}`, JSON.stringify(state.today));
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function autoGenerateTodayItems() {
+  const active = state.orders.filter(o => o.status !== 'archived');
+  state.today.inprogress = active.map(o => ({
+    id: 'ip-' + o.serialNo,
+    text: `${o.serialNo}｜${o.id} ${o.vendor}（${STATUS_MAP[o.status]?.label}）`
+  }));
+  // pending: missing docs + unpaid balances
+  const pending = [];
+  active.forEach(o => {
+    (o.documents || []).forEach(d => {
+      if (d.status === 'missing') {
+        pending.push({ id: `pd-${o.serialNo}-${d.type}`, text: `追取 ${d.type}（${o.id} ${o.vendor}）` });
+      }
+    });
+    if (o.status === 'pending_payment' && o.ciAmount > o.paidAmount) {
+      const due = o.ciAmount - o.paidAmount;
+      pending.push({ id: `pp-${o.serialNo}`, text: `付尾款（${o.id} ${o.vendor}，${o.piCurrency} ${due.toLocaleString()}）` });
+    }
+    if (o.eta) {
+      const days = Math.ceil((new Date(o.eta) - new Date()) / 86400000);
+      if (days >= 0 && days <= 14) {
+        pending.push({ id: `eta-${o.serialNo}`, text: `ETA 將近（${o.id}，剩 ${days} 天）` });
+      }
+    }
+  });
+  state.today.pending = pending;
+}
+
+function renderTodaySections() {
+  renderTodaySection('done',       'today-done');
+  renderTodaySection('pending',    'today-pending');
+  renderTodaySection('notes',      'today-notes');
+  renderTodaySection('inprogress', 'today-inprogress', true);
+}
+
+function renderTodaySection(key, containerId, readOnly = false) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = (state.today[key] || []).map(item => `
+    <div class="ts-item" data-id="${item.id}">
+      <span class="ts-item-text" ${readOnly ? '' : 'contenteditable="true"'}
+        onblur="updateTodayItem('${key}', '${item.id}', this.textContent)"
+      >${item.text}</span>
+      ${readOnly ? '' : `<button class="ts-item-del" onclick="deleteTodayItem('${key}', '${item.id}')">✕</button>`}
+    </div>`).join('');
+}
+
+function addTodayItem(key, event) {
+  if (event.key === 'Enter') addTodayItemBtn(key);
+}
+
+function addTodayItemBtn(key) {
+  const input = document.getElementById(`add-${key}-input`);
+  const text = input.value.trim();
+  if (!text) return;
+  state.today[key].push({ id: Date.now().toString(), text });
+  input.value = '';
+  renderTodaySection(key, `today-${key}`);
+  saveTodayToStorage();
+}
+
+function updateTodayItem(key, id, text) {
+  const item = state.today[key].find(i => i.id === id);
+  if (item) { item.text = text; saveTodayToStorage(); }
+}
+
+function deleteTodayItem(key, id) {
+  state.today[key] = state.today[key].filter(i => i.id !== id);
+  renderTodaySection(key, `today-${key}`);
+  saveTodayToStorage();
+}
+
+// ════════════════════════════════════════════════════════
+// TODAY LIST MODAL
+// ════════════════════════════════════════════════════════
+
+function openListModal() {
+  const d = new Date();
+  document.getElementById('listModalTitle').textContent =
+    `📋 今日進度 List — ${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+
+  const fmt = (items) => items.map(i => i.text).join('\n');
+
+  document.getElementById('listPreview').textContent = [
+    '💚 完成（今日完成）',
+    fmt(state.today.done) || '（無）',
+    '',
+    '💙 待完成（近期內要追蹤完成）',
+    fmt(state.today.pending) || '（無）',
+    '',
+    '❤️ 備注（新注意事項）',
+    fmt(state.today.notes) || '（無）',
+    '',
+    '🧡 進行中（未結案案子進度更新區）',
+    fmt(state.today.inprogress) || '（無）',
+  ].join('\n');
+
+  document.getElementById('listModal').classList.add('open');
+}
+
+function closeListModal() {
+  document.getElementById('listModal').classList.remove('open');
+}
+
+function copyList() {
+  const text = document.getElementById('listPreview').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('已複製到剪貼簿'));
+}
+
+function printList() {
+  const text = document.getElementById('listPreview').textContent;
+  const w = window.open('', '_blank');
+  w.document.write(`<pre style="font-family:sans-serif;font-size:14px;line-height:1.8;padding:24px;">${text}</pre>`);
+  w.print();
+}
+
+// ════════════════════════════════════════════════════════
+// ORDER DETAIL
+// ════════════════════════════════════════════════════════
+
+function renderOrderDetail(order) {
+  const s = STATUS_MAP[order.status] || {};
+
+  // Header
+  document.getElementById('dh-po').textContent = `${order.id} · ${order.vendor}`;
+  document.getElementById('dh-serial').textContent = `· ${order.serialNo}`;
+  document.getElementById('dh-meta').textContent =
+    `${order.containerType} · ETD ${order.etd || '—'} → ETA ${order.eta || '—'}`;
+  const sp = document.getElementById('dh-status-pill');
+  sp.textContent = s.label;
+  sp.className = `dh-status-pill status-pill ${s.pill}`;
+
+  // Progress track
+  renderProgressTrack(order.status);
+
+  // Accordion tags
+  const hasChange = order.changelog?.length > 0;
+  setTag('tag-content', hasChange ? '有變更' : '正常', hasChange ? 'tag-warn' : 'tag-ok');
+
+  const tailDue = order.status === 'pending_payment';
+  setTag('tag-payment', tailDue ? '尾款待付' : '已付清', tailDue ? 'tag-warn' : 'tag-ok');
+
+  const missingDocs = order.documents.filter(d => d.status === 'missing').length;
+  setTag('tag-docs',
+    missingDocs > 0 ? `${missingDocs} 份缺件` : '完整',
+    missingDocs > 0 ? 'tag-miss' : 'tag-ok');
+
+  setTag('tag-lc', order.landingCost ? '填寫中' : '待開始', order.landingCost ? 'tag-blue' : 'tag-gray');
+
+  // Notes acc
+  renderNotesAcc(order);
+
+  // Content acc
+  renderContentAcc(order);
+
+  // Payment acc
+  renderPaymentAcc(order);
+
+  // Docs acc
+  renderDocsAcc(order);
+
+  // Landing cost
+  document.getElementById('lc-tab-name').textContent = order.sheetsTabName || '—';
+  initLandingCost(order);
+  renderLCAcc(order);
+
+  // Chat
+  document.getElementById('chatTitle').textContent = `${order.id} 操作記錄 & 備注`;
+  renderChat(order.chatLog);
+
+  // Check flags for write button
+  checkLCFlags();
+}
+
+function renderProgressTrack(currentStatus) {
+  const idx = PROGRESS_STEPS.findIndex(s => s.key === currentStatus);
+  document.getElementById('progTrack').innerHTML = PROGRESS_STEPS.map((s, i) => {
+    const cls = i < idx ? 'done' : i === idx ? 'active' : '';
+    return `<div class="prog-step ${cls}">
+      <div class="prog-dot"></div>
+      <div class="prog-label">${s.label}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderNotesAcc(order) {
+  if (typeof order.notes !== 'string') {
+    order.notes = localStorage.getItem(`order-notes-${order.id}`) || '';
+  }
+  const ed = document.getElementById('order-notes-editor');
+  if (ed) ed.textContent = order.notes;
+  // 切換訂單時 reset 到「本機暫存」
+  const localRadio = document.querySelector('input[name="note-target"][value="local"]');
+  if (localRadio) localRadio.checked = true;
+  if (typeof onNoteTargetChange === 'function') onNoteTargetChange();
+  const tag = document.getElementById('tag-notes');
+  if (tag) {
+    if (order.notes.trim()) setTag('tag-notes', '已填', 'tag-ok');
+    else setTag('tag-notes', '空白', 'tag-gray');
+  }
+}
+
+function saveOrderNotes() {
+  // 失焦只在「本機暫存」模式才寫 localStorage；其他兩種要按「寫入」按鈕送出
+  const target = document.querySelector('input[name="note-target"]:checked')?.value || 'local';
+  if (target !== 'local') return;
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const ed = document.getElementById('order-notes-editor');
+  const text = ed ? ed.textContent : '';
+  order.notes = text;
+  localStorage.setItem(`order-notes-${order.id}`, text);
+  const tag = document.getElementById('tag-notes');
+  if (tag) {
+    if (text.trim()) setTag('tag-notes', '已填', 'tag-ok');
+    else setTag('tag-notes', '空白', 'tag-gray');
+  }
+}
+
+function onNoteTargetChange() {
+  const target = document.querySelector('input[name="note-target"]:checked')?.value || 'local';
+  const hint = document.getElementById('note-hint');
+  const btn = document.getElementById('note-submit-btn');
+  if (target === 'local') {
+    hint.textContent = '本機暫存：失焦自動保存到瀏覽器（重整保留，換機消失）';
+    btn.style.display = 'none';
+  } else if (target === 'os') {
+    hint.textContent = '寫入未付貨款 sheet 對應 PO 的「備註」欄（需 Google 授權；舊內容會被覆蓋）';
+    btn.style.display = '';
+    btn.textContent = '寫入未付貨款 →';
+  } else if (target === 'vendor') {
+    const order = state.orders.find(o => o.id === state.currentOrderId);
+    btn.textContent = `加進「${order?.vendor || '廠商'}」注意事項`;
+    hint.textContent = '附加一條新規則到廠商頁（本機保存；不回寫 Doc）';
+    btn.style.display = '';
+  }
+}
+
+async function submitOrderNote() {
+  const target = document.querySelector('input[name="note-target"]:checked')?.value;
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const ed = document.getElementById('order-notes-editor');
+  const text = (ed ? ed.textContent : '').trim();
+  if (!text) { alert('請先輸入內容'); return; }
+  const btn = document.getElementById('note-submit-btn');
+  btn.disabled = true;
+  const origLabel = btn.textContent;
+  btn.textContent = '寫入中…';
+  try {
+    if (target === 'os') {
+      const result = await writeOrderNoteToOS(order, text);
+      order.chatLog.push({ type: 'sys', text: `📝 已寫入未付貨款 ${result.tab}！${result.cellA1}：${text}`, time: nowStamp() });
+      ed.textContent = '';
+      alert(`已寫入未付貨款 sheet：${result.tab} ${result.cellA1}`);
+    } else if (target === 'vendor') {
+      appendVendorNote(order.vendor, text, order.id);
+      order.chatLog.push({ type: 'sys', text: `📌 已加進「${order.vendor}」廠商注意事項：${text}`, time: nowStamp() });
+      ed.textContent = '';
+      alert(`已加進「${order.vendor}」注意事項`);
+    }
+    renderChat(order.chatLog);
+  } catch (e) {
+    console.error(e);
+    alert(`寫入失敗：${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origLabel;
+  }
+}
+
+// 找未付貨款 tab + 對應 PO 列 + 備註欄；用 writeSheet 寫單一 cell
+async function writeOrderNoteToOS(order, text) {
+  const cache = state.sheetsCache?.orderStatus || {};
+  const tabName = Object.keys(cache).find(n => /未付貨款/.test(n));
+  if (!tabName) throw new Error('找不到「未付貨款」tab，請先連結 Google 並重整');
+  const rows = cache[tabName];
+  if (!rows || rows.length < 2) throw new Error('未付貨款 tab 沒資料');
+  const header = rows[0] || [];
+  const noteCol = header.findIndex(h => /備[註注]|備考|備忘|notes?|remark/i.test(String(h ?? '')));
+  if (noteCol < 0) throw new Error('未付貨款表頭找不到「備註」欄');
+  // 找 PO 列（任一格 === order.id，trim 後比對）
+  let rowIdx = -1;
+  for (let i = 1; i < rows.length; i++) {
+    if ((rows[i] || []).some(c => String(c ?? '').trim() === order.id)) {
+      rowIdx = i; break;
+    }
+  }
+  if (rowIdx < 0) throw new Error(`未付貨款 tab 找不到 ${order.id} 的列`);
+  const colLetter = colNumToLetter(noteCol);
+  const cellA1 = `${colLetter}${rowIdx + 1}`;
+  await writeSheet(CONFIG.ORDER_STATUS_SHEET_ID, `${tabName}!${cellA1}`, [[text]]);
+  // cache 同步
+  if (!rows[rowIdx]) rows[rowIdx] = [];
+  rows[rowIdx][noteCol] = text;
+  return { tab: tabName, cellA1 };
+}
+
+function colNumToLetter(n) {
+  let s = '';
+  n = n + 1;
+  while (n > 0) {
+    const m = (n - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+// Append 一條新規則到 vendor-notes-{vendor}（localStorage；不回寫 Doc）
+function appendVendorNote(vendor, text, fromOrderId) {
+  const key = `vendor-notes-${vendor}`;
+  const existing = localStorage.getItem(key) || '';
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const escaped = escapeHtml(text);
+  const newBlock = `<p style="margin:6px 0;padding:8px 10px;background:#fff8d6;border-left:3px solid #d4a017;"><strong>📌 ${dateStr}（${fromOrderId || ''}）</strong><br>${escaped}</p>`;
+  const merged = existing ? existing + newBlock : newBlock;
+  localStorage.setItem(key, merged);
+  // 如果目前正顯示這個廠商頁，重 render
+  const onVendorPage = document.querySelector('.page.active')?.id === 'page-vendor';
+  if (onVendorPage && typeof renderVendorNotes === 'function') {
+    const currentTitle = document.getElementById('vendorPageTitle')?.textContent || '';
+    if (currentTitle.includes(vendor)) renderVendorNotes(vendor);
+  }
+}
+
+function renderContentAcc(order) {
+  const body = document.getElementById('acc-content-body');
+  const ciChanged = order.changelog?.some(c => c.field.includes('CI'));
+  body.innerHTML = `
+    <div class="field-row">
+      <span class="field-label">合約號</span>
+      <span class="field-val">${order.id}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">廠商</span>
+      <span class="field-val">${order.vendor}${order.vendorFull ? ` (${order.vendorFull})` : ''}</span>
+    </div>
+    ${order.items.map((item, i) => `
+      <div class="field-row">
+        <span class="field-label">${item.code}</span>
+        <span class="field-val">
+          <span class="editable" contenteditable="true" data-edit="items.${i}.name">${item.name}</span>
+          ·
+          <span class="editable" contenteditable="true" data-edit="items.${i}.qty">${item.qty}</span>
+          <span class="editable" contenteditable="true" data-edit="items.${i}.unit">${item.unit || ''}</span>
+          ${item.changed ? `<span class="change-tag">${item.changed}</span>` : ''}
+        </span>
+      </div>`).join('')}
+    <div class="field-row">
+      <span class="field-label">CI 金額 (${order.piCurrency || ''})</span>
+      <span class="field-val ${ciChanged ? 'warn' : ''}">
+        <span class="editable" contenteditable="true" data-edit="ciAmount">${order.ciAmount ?? ''}</span>
+        ${ciChanged ? '<span class="change-tag">裝船後調整</span>' : ''}
+      </span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">付款方式</span>
+      <span class="field-val">${order.paymentTerms}</span>
+    </div>`;
+}
+
+function renderPaymentAcc(order) {
+  const body = document.getElementById('acc-payment-body');
+  const tailDue = order.ciAmount - order.paidAmount;
+  body.innerHTML = `
+    <div class="field-row">
+      <span class="field-label">已付款</span>
+      <span class="field-val">${order.piCurrency} ${order.paidAmount?.toLocaleString() || 0}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">CI 金額</span>
+      <span class="field-val">${order.piCurrency} ${order.ciAmount?.toLocaleString() || '—'}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">應付尾款</span>
+      <span class="field-val warn">${order.piCurrency} ${tailDue?.toLocaleString() || '—'}</span>
+    </div>
+    <div class="field-row">
+      <span class="field-label">計算說明</span>
+      <span class="field-val" style="font-size:10px;color:var(--ink-3);">
+        ${order.ciAmount} − ${order.paidAmount} = ${tailDue}
+      </span>
+    </div>`;
+}
+
+// Always render the 6 expected documents (PI/CI/BL/PL/水單/報單).
+// Each is matched against order.documents; missing → "待上傳".
+// Archived orders default all to "已取得" (LC tab complete implies docs were received).
+function renderDocsAcc(order) {
+  const CHIP_CLS = { PI:'chip-pi', CI:'chip-ci', BL:'chip-bl', PL:'chip-pl' };
+  const EXPECTED = ['PI', 'CI', 'BL', 'PL', '水單', '報單'];
+  const isArchived = order.status === 'archived';
+  const html = EXPECTED.map(type => {
+    const doc = (order.documents || []).find(d => d.type === type);
+    let chipCls = CHIP_CLS[type] || 'chip-miss';
+    let name, subParts, stCls, stLabel;
+    if (doc && doc.status === 'ok') {
+      name = doc.name || `${type} 文件`;
+      subParts = [doc.date, doc.amount, doc.note];
+      stCls = 'dst-ok';
+      stLabel = `✅ 已上傳`;
+    } else if (doc && doc.status === 'missing') {
+      name = `${type}`;
+      subParts = [];
+      stCls = 'dst-miss';
+      stLabel = '☐ 待上傳';
+      chipCls = 'chip-miss';
+    } else if (doc && doc.status === 'pending') {
+      name = doc.name || `${type}`;
+      subParts = [doc.note];
+      stCls = 'dst-pend';
+      stLabel = '⏳ 待取得';
+    } else if (isArchived) {
+      name = `${type}`;
+      subParts = ['Landing Cost 已結案'];
+      stCls = 'dst-ok';
+      stLabel = '✅ 已取得';
+    } else {
+      name = `${type}`;
+      subParts = [];
+      stCls = 'dst-miss';
+      stLabel = '☐ 待上傳';
+      chipCls = 'chip-miss';
+    }
+    return `
+      <div class="doc-item">
+        <div class="doc-chip ${chipCls}">${type}</div>
+        <div class="doc-info">
+          <div class="doc-name">${escapeHtml(name)}</div>
+          <div class="doc-sub">${subParts.filter(Boolean).map(escapeHtml).join(' · ')}</div>
+        </div>
+        <span class="doc-st ${stCls}">${stLabel}</span>
+      </div>`;
+  }).join('');
+  document.getElementById('acc-docs-body').innerHTML = html;
+}
+
+function renderChat(log) {
+  const feed = document.getElementById('chatFeed');
+  feed.innerHTML = log.map(m => `
+    <div class="chat-msg ${m.type}">
+      <div class="chat-bubble">${m.text}</div>
+      ${m.attach ? `
+        <div class="chat-attach">
+          <div class="attach-chip">${m.attach.chip}</div>
+          <span class="attach-name">${m.attach.name}</span>
+        </div>` : ''}
+      <div class="chat-time">${m.time}</div>
+    </div>`).join('');
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// ════════════════════════════════════════════════════════
+// ACCORDION
+// ════════════════════════════════════════════════════════
+
+function toggleAcc(head) {
+  const body = head.nextElementSibling;
+  const chev = head.querySelector('.acc-chev');
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+}
+
+function setTag(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `acc-tag ${cls}`;
+}
+
+// ════════════════════════════════════════════════════════
+// LANDING COST — Sheets-driven (iframe embed)
+// ════════════════════════════════════════════════════════
+
+const LC_REQUIRED_DOCS = ['CI', 'BL', 'PL', '水單', '報單'];
+
+function lcDocReadiness(order) {
+  return LC_REQUIRED_DOCS.map(t => {
+    const d = (order.documents || []).find(d => d.type === t);
+    return { type: t, ready: d?.status === 'ok', name: d?.name || '' };
+  });
+}
+
+function renderLCAcc(order) {
+  const status = lcDocReadiness(order);
+  const allReady = status.every(d => d.ready);
+  const tabName = order.sheetsTabName || (order.id !== '—' ? `${order.id}-${order.vendor.slice(0,3).toUpperCase()}` : '');
+  document.getElementById('lc-tab-name').textContent = tabName || '—';
+
+  const root = document.getElementById('lc-content');
+
+  // State A: tab created (lcTabGid available) — always show iframe.
+  // Archived orders skip the document-readiness check (已結案就是要看 Sheets)
+  const isArchived = order.status === 'archived';
+  if (order.lcTabGid != null && (allReady || isArchived)) {
+    const src = `https://docs.google.com/spreadsheets/d/${CONFIG.LANDING_COST_SHEET_ID}/edit?gid=${order.lcTabGid}&widget=false&headers=false&rm=embedded`;
+    root.innerHTML = `
+      <div style="padding:8px 14px;color:var(--ink-3);font-size:11px;">
+        ${isArchived ? '已結案訂單 — ' : ''}直接在下方 Sheets 中編輯。需登入有權限的 Google 帳號才能載入。
+      </div>
+      <iframe src="${src}" style="width:100%;height:560px;border:1px solid var(--border);background:#fff;" loading="lazy"></iframe>
+      <div class="lc-footer">
+        <button class="btn" onclick="renderLCAcc(state.orders.find(o=>o.id===state.currentOrderId))">🔄 重新載入</button>
+        <button class="btn-write-sheets" onclick="openSheetsTab()">在新分頁開啟 ↗</button>
+      </div>`;
+    setTag('tag-lc', isArchived ? '已結案' : '已建立', 'tag-ok');
+    return;
+  }
+
+  // State B: docs ready, tab not created
+  if (allReady) {
+    root.innerHTML = `
+      <div class="lc-sub-title">文件已就緒</div>
+      <div style="padding:14px;">
+        ${status.map(d => `
+          <div class="field-row">
+            <span class="field-label">${d.type}</span>
+            <span class="field-val">✅ ${d.name}</span>
+          </div>`).join('')}
+      </div>
+      <div class="lc-footer">
+        <span class="lc-note">將在 Landing Cost Sheet 建立 <strong>${tabName}</strong> tab</span>
+        <button class="btn-write-sheets" onclick="createLCTabAndPreview()">建立 LC tab 開始結算</button>
+      </div>`;
+    setTag('tag-lc', '可建立', 'tag-blue');
+    return;
+  }
+
+  // State C: waiting for docs
+  const missing = status.filter(d => !d.ready).length;
+  root.innerHTML = `
+    <div class="lc-sub-title">文件就緒檢查（收齊後可結算）</div>
+    <div style="padding:14px;">
+      ${status.map(d => `
+        <div class="field-row">
+          <span class="field-label">${d.type}</span>
+          <span class="field-val ${d.ready ? '' : 'warn'}">${d.ready ? `✅ ${d.name}` : '⏳ 待上傳'}</span>
+        </div>`).join('')}
+    </div>
+    <div class="lc-footer">
+      <span class="lc-note">收齊全套文件 + 水單 + 報單後即可結算</span>
+      <button class="btn-write-sheets" disabled>建立 LC tab</button>
+    </div>`;
+  setTag('tag-lc', `等待文件（缺 ${missing}）`, 'tag-gray');
+}
+
+async function createLCTabAndPreview() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const tabName = order.sheetsTabName || `${order.id}-${order.vendor.slice(0,3).toUpperCase()}`;
+  try {
+    await createSheetTab(CONFIG.LANDING_COST_SHEET_ID, tabName);
+    const meta = await getSheetMeta(CONFIG.LANDING_COST_SHEET_ID);
+    const tab = meta.find(s => s.properties.title === tabName);
+    if (!tab) throw new Error(`找不到 tab ${tabName}`);
+    order.sheetsTabName = tabName;
+    order.lcTabGid = tab.properties.sheetId;
+    order.sheetsUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.LANDING_COST_SHEET_ID}/edit#gid=${tab.properties.sheetId}`;
+    order.chatLog.push({ type: 'sys', text: `已建立 Landing Cost tab：${tabName}`, time: nowStamp() });
+    renderOrderDetail(order);
+  } catch (e) {
+    console.error(e);
+    alert('建立 tab 失敗：' + e.message + '\n（需先連結 Google）');
+  }
+}
+
+// Legacy stubs kept for compatibility (no-ops in Sheets-driven flow)
+// 依 spec 自動帶入固定費用（港務/拖車/其他報關費）；只填空欄，不蓋寫 Sheets 拉回來的值
+function initLandingCost(order) {
+  const lc = order.landingCost;
+  if (!lc) return;
+  lc.charges = lc.charges || {};
+  const c = lc.charges;
+  const ct = String(order.containerType || '');
+  if (c.portFee == null) {
+    if (/40/.test(ct)) c.portFee = CONFIG.DEFAULT_CHARGES.container40;
+    else if (/20/.test(ct)) c.portFee = CONFIG.DEFAULT_CHARGES.container20;
+  }
+  if (c.truckFee == null) c.truckFee = CONFIG.DEFAULT_CHARGES.truck;
+  if (c.customsDocFee == null) {
+    const isChina = /(中国|中國)/.test(order.vendorFull || order.vendor || '');
+    c.customsDocFee = isChina ? CONFIG.DEFAULT_CHARGES.customs_doc_china : CONFIG.DEFAULT_CHARGES.customs_doc;
+  }
+}
+function checkLCFlags() { /* no-op */ }
+function openSheetsTab() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  // Compute URL: prefer stored sheetsUrl; fallback to lcTabGid; fallback to bare sheet URL
+  let url = order.sheetsUrl;
+  if (!url && order.lcTabGid != null) {
+    url = `https://docs.google.com/spreadsheets/d/${CONFIG.LANDING_COST_SHEET_ID}/edit#gid=${order.lcTabGid}`;
+  }
+  if (!url) {
+    url = `https://docs.google.com/spreadsheets/d/${CONFIG.LANDING_COST_SHEET_ID}/edit`;
+  }
+  window.open(url, '_blank');
+}
+async function writeToSheets() { /* deprecated: editing happens in iframe */ alert('Landing Cost 直接在嵌入的 Sheets 編輯即可'); }
+
+// (old LC-form helpers removed — LC is now Sheets-driven)
+function _DEAD_BLOCK_BEGIN() { return; /*
+  if (order.landingCost) return;
+  const isChina = order.vendorFull && /(中国|中國)/.test(order.vendorFull);
+  const portFee = order.containerType === "40'" ? CONFIG.DEFAULT_CHARGES.container40
+                : order.containerType === "20'" ? CONFIG.DEFAULT_CHARGES.container20
+                : null;
+  const customsFee = isChina ? CONFIG.DEFAULT_CHARGES.customs_doc_china : CONFIG.DEFAULT_CHARGES.customs_doc;
+  order.landingCost = {
+    payment: [],
+    charges: {
+      portFee: portFee,
+      truckFee: CONFIG.DEFAULT_CHARGES.truck,
+      customsDocFee: customsFee,
+      importTax: null,
+      containerFee: null
+    },
+    avgRows: order.items.map(it => ({
+      code: it.code, qty: it.qty, stock: null, prevAvg: null
+    }))
+  };
+}
+
+function renderLCAcc(order) {
+  const lc = order.landingCost;
+  const cur = order.piCurrency || 'USD';
+
+  // 基本資訊
+  document.getElementById('lc-basic').innerHTML = `
+    <div class="field-row"><span class="field-label">合約號</span><span class="field-val">${order.id}</span></div>
+    <div class="field-row"><span class="field-label">流水號</span><span class="field-val">${order.serialNo}</span></div>
+    <div class="field-row"><span class="field-label">ETD / ETA</span><span class="field-val">${order.etd || '—'} → ${order.eta || '—'}</span></div>
+    <div class="field-row"><span class="field-label">貨櫃</span><span class="field-val">${order.containerType || '—'}</span></div>
+  `;
+
+  // 訂單細節 (CI) — 含「換算成包裝」欄
+  document.getElementById('lc-items-table').innerHTML = `
+    <thead><tr><th>產品編號</th><th>品項</th><th>數量</th><th>包裝</th><th>換算</th><th>單價(${cur})</th><th>總價(${cur})</th></tr></thead>
+    <tbody>
+      ${order.items.map((it, i) => {
+        const pk = lookupProductPackaging(it.code);
+        const cartons = (pk.packSize && it.qty)
+          ? (it.qty / pk.packSize).toFixed(2) + ' 箱'
+          : '—';
+        return `
+        <tr>
+          <td>${it.code}</td>
+          <td>${it.name}</td>
+          <td>${it.qty} ${it.unit || ''}</td>
+          <td style="color:var(--ink-3);font-size:12px;">${pk.label || '—'}</td>
+          <td>${cartons}</td>
+          <td><span class="editable" contenteditable="true" oninput="onLCItemEdit(${i}, this.textContent)">${it.unitPrice ?? ''}</span></td>
+          <td><span data-lc-item-total="${i}">${((it.qty||0) * (it.unitPrice||0)).toFixed(2)}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  `;
+
+  // 付款細目
+  const payments = lc.payment.length ? lc.payment
+    : [{ ratio: order.paymentTerms || '—', rate: null, amount: null, fee: null, customsRate: null }];
+  document.getElementById('lc-payment').innerHTML = payments.map((p, i) => `
+    <div class="field-row"><span class="field-label">付款佔比 #${i+1}</span><span class="field-val">${p.ratio || '—'}</span></div>
+    <div class="field-row"><span class="field-label">付款匯率</span><span class="field-val">${lcFlag(p.rate, 'payment', i, 'rate')}</span></div>
+    <div class="field-row"><span class="field-label">付款金額 (${cur})</span><span class="field-val">${lcFlag(p.amount, 'payment', i, 'amount')}</span></div>
+    <div class="field-row"><span class="field-label">台幣換算</span><span class="field-val">${(p.rate && p.amount) ? 'NTD ' + (p.rate * p.amount).toLocaleString(undefined,{maximumFractionDigits:0}) : '—'}</span></div>
+    <div class="field-row"><span class="field-label">手續費 (NTD)</span><span class="field-val">${lcFlag(p.fee, 'payment', i, 'fee')}</span></div>
+    <div class="field-row"><span class="field-label">海關匯率</span><span class="field-val">${lcFlag(p.customsRate, 'payment', i, 'customsRate')}</span></div>
+  `).join('<hr style="border:0;border-top:1px dashed var(--rule);margin:6px 14px;">');
+
+  // 其他費用
+  const c = lc.charges;
+  document.getElementById('lc-charges').innerHTML = `
+    <div class="field-row"><span class="field-label">港務費 (${order.containerType || '—'})</span><span class="field-val">${c.portFee != null ? 'NTD ' + c.portFee.toLocaleString() : lcFlag(null,'charges',0,'portFee')}</span></div>
+    <div class="field-row"><span class="field-label">拖車費</span><span class="field-val"><span class="editable" contenteditable="true" oninput="onLCChargeEdit('truckFee', this.textContent)">${c.truckFee ?? ''}</span> NTD</span></div>
+    <div class="field-row"><span class="field-label">報關費</span><span class="field-val"><span class="editable" contenteditable="true" oninput="onLCChargeEdit('customsDocFee', this.textContent)">${c.customsDocFee ?? ''}</span> NTD</span></div>
+    <div class="field-row"><span class="field-label">進口稅</span><span class="field-val">${c.importTax != null ? 'NTD ' + c.importTax.toLocaleString() : lcFlag(null,'charges',0,'importTax')}</span></div>
+    <div class="field-row"><span class="field-label">吊櫃費</span><span class="field-val">${c.containerFee != null ? 'NTD ' + c.containerFee.toLocaleString() : lcFlag(null,'charges',0,'containerFee')}</span></div>
+  `;
+
+  updateLCTotal(order);
+  renderLCAvgTable(order);
+  checkLCFlags();
+
+  const flags = document.querySelectorAll('#acc-lc .flag-q').length;
+  if (flags === 0) setTag('tag-lc', '已完成', 'tag-ok');
+  else setTag('tag-lc', `填寫中（缺 ${flags}）`, 'tag-blue');
+}
+
+function lcFlag(val, group, idx, field) {
+  if (val != null && val !== '') return `<span>${val}</span>`;
+  return `<span class="flag-val flag-q" onclick="promptLCFill('${group}',${idx},'${field}')">?</span>`;
+}
+
+function promptLCFill(group, idx, field) {
+  const v = prompt(`填入 ${field}：`);
+  if (v == null || v.trim() === '') return;
+  const num = parseFloat(v);
+  if (isNaN(num)) { alert('請輸入數字'); return; }
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const lc = order.landingCost;
+  if (group === 'payment') {
+    if (!lc.payment[idx]) lc.payment[idx] = { ratio: order.paymentTerms || '—' };
+    lc.payment[idx][field] = num;
+  } else if (group === 'charges') {
+    lc.charges[field] = num;
+  } else if (group === 'avg') {
+    lc.avgRows[idx][field] = num;
+  }
+  renderLCAcc(order);
+}
+
+function onLCItemEdit(i, txt) {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const num = parseFloat(txt);
+  if (isNaN(num)) return;
+  order.items[i].unitPrice = num;
+  const totalEl = document.querySelector(`[data-lc-item-total="${i}"]`);
+  if (totalEl) totalEl.textContent = (order.items[i].qty * num).toFixed(2);
+  renderLCAvgTable(order);
+}
+
+function onLCChargeEdit(field, txt) {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const num = parseFloat(txt);
+  if (isNaN(num)) return;
+  order.landingCost.charges[field] = num;
+  updateLCTotal(order);
+  renderLCAvgTable(order);
+}
+
+function updateLCTotal(order) {
+  const c = order.landingCost.charges;
+  const sum = ['portFee','truckFee','customsDocFee','importTax','containerFee']
+    .reduce((s, k) => s + (c[k] || 0), 0);
+  document.getElementById('lc-total').textContent = 'NTD ' + sum.toLocaleString();
+}
+
+function renderLCAvgTable(order) {
+  const lc = order.landingCost;
+  const customsRate = lc.payment.find(p => p && p.customsRate)?.customsRate;
+  const totalCharges = ['portFee','truckFee','customsDocFee','importTax','containerFee']
+    .reduce((s, k) => s + (lc.charges[k] || 0), 0);
+  const totalQty = order.items.reduce((s, it) => s + (it.qty || 0), 0);
+  const allocPerUnit = totalQty > 0 ? totalCharges / totalQty : 0;
+
+  document.getElementById('lc-avg-table').innerHTML = `
+    <thead><tr><th>產品編號</th><th>現購量</th><th>台幣單價</th><th>庫存</th><th>前均價</th><th>現均價</th></tr></thead>
+    <tbody>
+      ${lc.avgRows.map((r, i) => {
+        const item = order.items[i] || {};
+        const twdUnit = (customsRate && item.unitPrice != null)
+          ? (item.unitPrice * customsRate + allocPerUnit) : null;
+        const currentAvg = (twdUnit != null && r.stock != null && r.prevAvg != null)
+          ? ((r.stock * r.prevAvg) + (r.qty * twdUnit)) / (r.stock + r.qty) : null;
+        return `
+          <tr>
+            <td>${r.code}</td>
+            <td>${r.qty}</td>
+            <td>${twdUnit != null ? twdUnit.toFixed(2) : '<span style="color:var(--ink-3);">—</span>'}</td>
+            <td>${r.stock != null ? r.stock.toLocaleString() : lcFlag(null,'avg',i,'stock')}</td>
+            <td>${r.prevAvg != null ? r.prevAvg.toFixed(2) : lcFlag(null,'avg',i,'prevAvg')}</td>
+            <td>${currentAvg != null ? currentAvg.toFixed(2) : '—'}</td>
+          </tr>`;
+      }).join('')}
+    </tbody>
+  `;
+}
+
+function checkLCFlags() {
+  // TODO: check all flag-q elements in lc section
+  // If any remain, keep write button disabled
+  const flags = document.querySelectorAll('.flag-q');
+  const hasFlags = flags.length > 0;
+  const btn = document.getElementById('btnWriteSheets');
+  btn.disabled = hasFlags;
+  document.getElementById('lc-flag-hint').textContent = hasFlags
+    ? `填入所有紅色 ? 後才可寫入（剩 ${flags.length} 項）`
+    : '所有欄位已填入，可以寫入';
+}
+
+function openSheetsTab() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (order?.sheetsUrl) window.open(order.sheetsUrl, '_blank');
+  // TODO: open directly to the correct tab using gid parameter
+}
+
+async function writeToSheets() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const lc = order.landingCost;
+  if (!lc) { alert('Landing Cost 尚未填寫'); return; }
+  const tabName = order.sheetsTabName || `${order.id}-${order.vendor.slice(0,3).toUpperCase()}`;
+
+  try {
+    document.getElementById('btnWriteSheets').disabled = true;
+    document.getElementById('btnWriteSheets').textContent = '寫入中…';
+
+    // 1. ensure tab exists
+    const created = await createSheetTab(CONFIG.LANDING_COST_SHEET_ID, tabName);
+    // 2. get sheetId for URL
+    const meta = await getSheetMeta(CONFIG.LANDING_COST_SHEET_ID);
+    const tab = meta.find(s => s.properties.title === tabName);
+    if (tab) {
+      order.sheetsUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.LANDING_COST_SHEET_ID}/edit#gid=${tab.properties.sheetId}`;
+      order.sheetsTabName = tabName;
+    }
+
+    // 3. build value matrix matching LC accordion layout
+    const rows = [
+      ['合約號', order.id, '', '流水號', order.serialNo],
+      ['ETD', order.etd, '', 'ETA', order.eta],
+      ['貨櫃', order.containerType, '', '幣別', order.piCurrency || ''],
+      [],
+      ['訂單細節 (CI)'],
+      ['產品編號', '品項', '數量', `單價(${order.piCurrency||''})`, '總價'],
+      ...order.items.map(it => [it.code, it.name, it.qty, it.unitPrice, (it.qty||0)*(it.unitPrice||0)]),
+      [],
+      ['付款細目'],
+      ['佔比', '匯率', '金額(原幣)', '台幣換算', '手續費(NTD)', '海關匯率'],
+      ...lc.payment.map(p => [
+        p.ratio, p.rate, p.amount,
+        (p.rate && p.amount) ? p.rate * p.amount : '',
+        p.fee, p.customsRate
+      ]),
+      [],
+      ['其他費用 (NTD)'],
+      ['港務費', lc.charges.portFee],
+      ['拖車費', lc.charges.truckFee],
+      ['報關費', lc.charges.customsDocFee],
+      ['進口稅', lc.charges.importTax],
+      ['吊櫃費', lc.charges.containerFee],
+      ['Total', ['portFee','truckFee','customsDocFee','importTax','containerFee'].reduce((s,k)=>s+(lc.charges[k]||0),0)],
+      [],
+      ['成本與均價'],
+      ['產品編號', '現購量', '台幣單價', '庫存', '前均價', '現均價'],
+      ...lc.avgRows.map((r, i) => {
+        const item = order.items[i] || {};
+        const customsRate = lc.payment.find(p => p && p.customsRate)?.customsRate;
+        const totalCharges = ['portFee','truckFee','customsDocFee','importTax','containerFee']
+          .reduce((s,k)=>s+(lc.charges[k]||0),0);
+        const totalQty = order.items.reduce((s, it) => s + (it.qty||0), 0);
+        const allocPerUnit = totalQty > 0 ? totalCharges / totalQty : 0;
+        const twdUnit = (customsRate && item.unitPrice != null) ? item.unitPrice * customsRate + allocPerUnit : '';
+        const currentAvg = (twdUnit !== '' && r.stock != null && r.prevAvg != null)
+          ? ((r.stock * r.prevAvg) + (r.qty * twdUnit)) / (r.stock + r.qty) : '';
+        return [r.code, r.qty, twdUnit, r.stock, r.prevAvg, currentAvg];
+      })
+    ];
+
+    await writeSheet(CONFIG.LANDING_COST_SHEET_ID, `${tabName}!A1`, rows);
+
+    order.chatLog.push({
+      type: 'sys',
+      text: `Landing Cost 已寫入 Sheets tab「${tabName}」(${rows.length} 行)`,
+      time: nowStamp()
+    });
+    renderOrderDetail(order);
+    alert(`✅ 已寫入 ${tabName}`);
+  } catch (e) {
+    console.error(e);
+    alert('寫入失敗：' + e.message);
+  } finally {
+    document.getElementById('btnWriteSheets').disabled = false;
+    document.getElementById('btnWriteSheets').textContent = '寫入 Sheets ↗';
+    checkLCFlags();
+  }
+*/ }
+
+// (loadOrdersFromSheets removed — 訂單來源改為 Landing Cost tabs，由 deriveOrdersFromLC 處理。)
+// Order Status sheet 的 tabs（Open Orders / 未付貨款 / 各外幣）仍由 loadAllSheetsData 載入到 cache，
+// 供 QA 查詢使用，但不作為訂單清單來源。
+
+// ════════════════════════════════════════════════════════
+// CHAT & QUICK ACTIONS
+// ════════════════════════════════════════════════════════
+
+let qaOpen = true;
+function toggleQA() {
+  qaOpen = !qaOpen;
+  document.getElementById('qaDropdown').classList.toggle('open', qaOpen);
+  document.getElementById('qaChev').textContent = qaOpen ? '▴' : '▾';
+}
+
+function pickAction(action) {
+  document.getElementById('chatInput').value = action;
+  document.getElementById('chatInput').focus();
+  qaOpen = false;
+  document.getElementById('qaDropdown').classList.remove('open');
+  document.getElementById('qaChev').textContent = '▾';
+}
+
+function sendChatOnEnter(e) { if (e.key === 'Enter') sendChat(); }
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const time = nowStamp();
+  order.chatLog.push({ type: 'me', text, time });
+
+  // Action routing
+  let sysReply = null;
+  if (/審\s*PI/.test(text)) {
+    expandAcc('acc-docs');
+    sysReply = '請上傳 PI 文件 → 點擊下方 📎';
+  } else if (/審全套文件/.test(text)) {
+    expandAcc('acc-docs');
+    sysReply = '請依序確認 CI / BL / PL / 原產地證 — 缺件以紅色標記';
+  } else if (/上傳水單/.test(text)) {
+    sysReply = '開啟水單上傳';
+    setTimeout(() => triggerUploadRemittance(), 300);
+  } else if (/做\s*Landing\s*Cost|成本結算/i.test(text)) {
+    expandAcc('acc-lc');
+    sysReply = `已展開 Landing Cost — tab：${order.sheetsTabName || '（待建立）'}`;
+  } else if (/更新\s*Open\s*Orders/.test(text)) {
+    sysReply = '此功能需要 Google Sheets 授權（Stop 8 後可用）';
+  } else if (/寫\s*email/i.test(text)) {
+    sysReply = '請選擇情境：下單 / 改單 / 追貨 / 追文件（後續整合 LLM 自動草擬）';
+  }
+
+  if (sysReply) {
+    order.chatLog.push({ type: 'sys', text: sysReply, time: nowStamp() });
+  }
+  renderChat(order.chatLog);
+  input.value = '';
+}
+
+function expandAcc(id) {
+  const acc = document.getElementById(id);
+  if (!acc) return;
+  const body = acc.querySelector('.acc-body');
+  if (body && !body.classList.contains('open')) acc.querySelector('.acc-head').click();
+  acc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function triggerFileUpload() { document.getElementById('fileInput').click(); }
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const type = prompt('這份文件是什麼？\nPI / CI / BL / PL / 水單 / 報單');
+  if (!type) return;
+  const t = type.trim();
+  const today = new Date();
+  const dateStr = `${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const existing = order.documents.find(d => d.type === t);
+  if (existing) {
+    existing.name = file.name;
+    existing.date = dateStr;
+    existing.status = 'ok';
+  } else {
+    order.documents.push({ type: t, name: file.name, date: dateStr, status: 'ok' });
+  }
+  order.chatLog.push({
+    type: 'sys',
+    text: `已上傳 ${t}：${file.name}`,
+    time: nowStamp(),
+    attach: { chip: t, name: file.name }
+  });
+  renderOrderDetail(order);
+}
+
+function triggerUploadRemittance() {
+  const fileInput = document.getElementById('fileInput');
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  // Use a one-time handler that overrides handleFileUpload
+  const onceHandler = (ev) => {
+    fileInput.removeEventListener('change', onceHandler, true);
+    const file = ev.target.files[0];
+    ev.target.value = '';
+    ev.stopImmediatePropagation();
+    if (!file) return;
+    const ratio = prompt('付款佔比（例如 30% / 70% / 100%）：', order.paymentTerms === '30/70' ? (order.paidAmount > 0 ? '70%' : '30%') : '100%');
+    if (!ratio) return;
+    const amount = parseFloat(prompt(`付款金額（${order.piCurrency || ''}）：`));
+    if (isNaN(amount)) { alert('金額格式錯誤'); return; }
+    const rate = parseFloat(prompt('付款匯率：'));
+    if (isNaN(rate)) { alert('匯率格式錯誤'); return; }
+    const fee = parseFloat(prompt('手續費（NTD，可填 0）：') || '0');
+    initLandingCost(order);
+    order.landingCost.payment.push({ ratio, rate, amount, fee, customsRate: null });
+    order.paidAmount = (order.paidAmount || 0) + amount;
+    // update or add 水單 doc
+    const dateStr = nowStamp().slice(0, 5);
+    const slipDoc = order.documents.find(d => d.type === '水單' && d.status === 'missing');
+    if (slipDoc) {
+      slipDoc.status = 'ok';
+      slipDoc.name = file.name;
+      slipDoc.date = dateStr;
+      slipDoc.amount = `${order.piCurrency} ${amount.toLocaleString()}`;
+    } else {
+      order.documents.push({
+        type: '水單', name: file.name, date: dateStr,
+        amount: `${order.piCurrency} ${amount.toLocaleString()}`,
+        status: 'ok'
+      });
+    }
+    order.chatLog.push({
+      type: 'sys',
+      text: `${ratio} 付款記帳完成。${order.piCurrency} ${amount.toLocaleString()} / 匯率 ${rate} → 台幣 ${(amount*rate).toLocaleString(undefined,{maximumFractionDigits:0})}`,
+      time: nowStamp(),
+      attach: { chip: '水單', name: file.name }
+    });
+    renderOrderDetail(order);
+  };
+  fileInput.addEventListener('change', onceHandler, true);
+  fileInput.click();
+}
+
+// ════════════════════════════════════════════════════════
+// NEW ORDER MODAL
+// ════════════════════════════════════════════════════════
+
+function openNewOrderModal() {
+  ['no-vendor','no-id','no-serial'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('newOrderModal').classList.add('open');
+}
+
+function closeNewOrderModal() {
+  document.getElementById('newOrderModal').classList.remove('open');
+}
+
+function submitNewOrder() {
+  const vendor = document.getElementById('no-vendor').value.trim();
+  const id = document.getElementById('no-id').value.trim() || '—';
+  const serial = document.getElementById('no-serial').value.trim();
+  if (!vendor || !serial) { alert('請填入廠商和流水號'); return; }
+  if (state.orders.some(o => o.serialNo === serial)) { alert('流水號已存在'); return; }
+  const newOrder = {
+    id, serialNo: serial, vendor, vendorFull: '',
+    containerType: '', etd: '', eta: '',
+    status: 'ordered',
+    paymentTerms: '', piAmount: 0, piCurrency: '',
+    ciAmount: 0, paidAmount: 0,
+    items: [], documents: [], changelog: [], notes: localStorage.getItem(`order-notes-${id}`) || '',
+    chatLog: [{ type: 'sys', text: `${id} 建立（廠商：${vendor}）。後續資訊待 PI 取得後補入。`, time: nowStamp() }],
+    landingCost: null,
+    sheetsTabName: id !== '—' ? `${id}-${vendor.slice(0,3).toUpperCase()}` : '',
+    sheetsUrl: '', lcTabGid: null
+  };
+  state.orders.unshift(newOrder);
+  saveOrdersRegistry();
+  if (!state.vendors.includes(vendor)) state.vendors.push(vendor);
+  closeNewOrderModal();
+  renderSidebar();
+  renderOrdersTable();
+  if (newOrder.id !== '—') {
+    const navEl = document.querySelector(`[data-order="${newOrder.id}"]`);
+    openOrder(newOrder.id, navEl);
+  } else {
+    alert(`已建立訂單（流水號 ${serial}）`);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// QUICK ASK (快問快答)
+// ════════════════════════════════════════════════════════
+
+const qaSession = []; // {type: 'me'|'sys', text, attach?}
+
+function openQAModal(prefill = '') {
+  document.getElementById('qaModal').classList.add('open');
+  if (prefill) {
+    document.getElementById('qaInput').value = prefill;
+    setTimeout(() => sendQA(), 50);
+  } else {
+    setTimeout(() => document.getElementById('qaInput').focus(), 50);
+  }
+  renderQAFeed();
+}
+
+function closeQAModal() { document.getElementById('qaModal').classList.remove('open'); }
+
+function renderQAFeed() {
+  const feed = document.getElementById('qaFeed');
+  if (!qaSession.length) {
+    const cacheStatus = state.sheetsCache?.loadedAt
+      ? `<span style="color:var(--green-mid);">✅ Sheets 已載入（${countSheetsRows()} 行，${new Date(state.sheetsCache.loadedAt).toLocaleTimeString()}）</span>`
+      : `<span style="color:var(--red);">⚠ Sheets 未載入 — 請先點右上「🔒 連結 Google」</span>`;
+    feed.innerHTML = `
+      <div style="color:var(--ink-3);font-size:11px;text-align:center;padding:24px 12px;line-height:1.7;">
+        ${cacheStatus}<br><br>
+        可以問：<br>
+        • <strong>產品編號</strong>（如 IAM300EA）→ 從 Landing Cost / 產品對照表查<br>
+        • <strong>合約號 / 流水號</strong>（如 T047）→ Order Status 查訂單狀態<br>
+        • <strong>廠商名</strong>（如 WANDA）→ 廠商一覽表 + 廠商注意事項<br>
+        • <strong>SOP 關鍵字</strong>（如 "進倉"、"水單"）→ SOP 段落<br>
+        • 📎 上傳 PDF / 圖片 → 記錄到對話 log
+      </div>`;
+    return;
+  }
+  feed.innerHTML = qaSession.map(m => `
+    <div class="chat-msg ${m.type}">
+      <div class="chat-bubble">${m.text}</div>
+      ${m.attach ? `<div class="chat-attach"><div class="attach-chip">${m.attach.chip||'檔'}</div><span class="attach-name">${m.attach.name}</span></div>` : ''}
+    </div>`).join('');
+  feed.scrollTop = feed.scrollHeight;
+}
+
+let _qaLastEnter = 0;
+function qaEnterHandler(event) {
+  if (event.key !== 'Enter') { _qaLastEnter = 0; return; }
+  event.preventDefault();
+  const now = Date.now();
+  if (now - _qaLastEnter < 1500) {
+    _qaLastEnter = 0;
+    sendQA();
+  } else {
+    _qaLastEnter = now;
+    const input = document.getElementById('qaInput');
+    const orig = input.placeholder;
+    input.placeholder = '⏎ 再按一次 Enter 送出…';
+    setTimeout(() => { if (Date.now() - _qaLastEnter >= 1450) input.placeholder = orig; }, 1500);
+  }
+}
+
+function sendQA() {
+  const input = document.getElementById('qaInput');
+  const q = input.value.trim();
+  if (!q) return;
+  qaSession.push({ type: 'me', text: q });
+  input.value = '';
+  input.placeholder = '問問題或貼產品編號 / 合約號 / 廠商名…（按兩次 Enter 送出）';
+  const reply = answerQA(q);
+  qaSession.push({ type: 'sys', text: reply });
+  renderQAFeed();
+}
+
+function answerQA(q) {
+  const matches = [];
+  const code = extractProductCode(q);
+  const wantsHistory = /前均價|前進價|上一筆|最近一次|上次|歷史進價|歷史均價|前次/.test(q);
+
+  // INTENT 1: product code → spec
+  // INTENT 2: product code + 歷史/前均價 → last purchase
+  if (code) {
+    if (wantsHistory) {
+      const last = findLastPurchaseFor(code);
+      if (last) matches.push(formatLastPurchase(code, last));
+      else matches.push(`<strong>📦 ${code}</strong>：歷史訂單中找不到此編號。`);
+    } else {
+      const spec = lookupProductSpec(code);
+      if (spec) matches.push(formatProductSpec(code, spec));
+      else matches.push(`<strong>📦 ${code}</strong>：產品編號對照表中找不到。`);
+      // Bonus: also show last purchase if available
+      const last = findLastPurchaseFor(code);
+      if (last) matches.push(formatLastPurchase(code, last));
+    }
+  }
+
+  // INTENT 3: vendor name → 廠商一覽表 row + 採購文件段落
+  for (const v of state.vendors || []) {
+    if (q.includes(v) || q.toLowerCase().includes(v.toLowerCase())) {
+      const saved = localStorage.getItem(`vendor-notes-${v}`);
+      const fromDoc = lookupVendorInDoc(v);
+      const notes = saved != null ? saved : (fromDoc?.html || null);
+      if (notes) matches.push(`<strong>🏭 ${v}（採購文件）</strong><br><pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;margin:4px 0;">${escapeHtml(notes)}</pre>`);
+    }
+  }
+  const vendorRow = lookupVendorRow(q);
+  if (vendorRow) matches.push(vendorRow);
+
+  // FALLBACK: generic full-text scan + doc text scan
+  if (!matches.length) {
+    const sheetsHits = searchSheetsCache(q);
+    if (sheetsHits.length) matches.push(sheetsHits);
+
+    const docText = state.docCache?.fullText;
+    if (docText) {
+      const docHits = docText.split('\n').filter(l => l.length > 2 && l.includes(q));
+      if (docHits.length) matches.push(`<strong>📄 採購文件</strong><br><pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;margin:4px 0;">${escapeHtml(docHits.slice(0,8).join('\n'))}</pre>`);
+    }
+  }
+
+  if (!matches.length) {
+    if (!state.sheetsCache?.loadedAt) {
+      return `Sheets 尚未載入。請先點右上角「🔒 連結 Google」。`;
+    }
+    return `沒找到「${escapeHtml(q)}」相關內容。<br><button class="btn" onclick="reloadSheetsCache()" style="margin-top:8px;font-size:11px;">🔄 重新載入 Sheets</button>`;
+  }
+  return matches.join('<hr style="border:0;border-top:1px dashed var(--rule);margin:8px 0;">');
+}
+
+function extractProductCode(q) {
+  // Product codes must mix letters + digits (IAM300EA, CSM300E). Pure-letter strings (WANDA) are vendor names.
+  const m = q.match(/\b[A-Z][A-Z0-9]*\d[A-Z0-9]*\b/);
+  return m ? m[0] : null;
+}
+
+function findTabByPatterns(group, patterns) {
+  const tabs = Object.keys(state.sheetsCache?.[group] || {});
+  for (const p of patterns) {
+    const t = tabs.find(name => name.includes(p));
+    if (t) return t;
+  }
+  return null;
+}
+
+function rowToObject(header, row) {
+  return header.reduce((o, h, i) => {
+    const key = String(h ?? '').trim();
+    if (key && row[i] != null && row[i] !== '') o[key] = row[i];
+    return o;
+  }, {});
+}
+
+// 從產品編號對照表抓「包裝/每箱數量」資訊
+// 回傳 { label, packSize }；label 為顯示用字串（例 "12瓶/箱"），packSize 為換算用數字
+function lookupProductPackaging(code) {
+  const spec = lookupProductSpec(code);
+  if (!spec) return { label: '', packSize: null };
+  const keyRe = /(包裝|每箱|箱裝|入數|裝箱|pack)/i;
+  let label = '', packSize = null;
+  for (const [k, v] of Object.entries(spec.obj)) {
+    if (keyRe.test(k)) {
+      const sv = String(v ?? '').trim();
+      if (!sv) continue;
+      label = sv;
+      const m = sv.match(/(\d+(?:\.\d+)?)/);
+      if (m) packSize = parseFloat(m[1]);
+      break;
+    }
+  }
+  return { label, packSize };
+}
+
+function lookupProductSpec(code) {
+  const tabName = findTabByPatterns('landingCost', ['產品編號對照', '產品對照', '產品列表', '產品']);
+  if (!tabName) return null;
+  const rows = state.sheetsCache.landingCost[tabName];
+  if (!rows || rows.length < 2) return null;
+  const header = rows[0];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i] || [];
+    if (row.some(c => String(c ?? '').trim() === code)) {
+      return { tab: tabName, obj: rowToObject(header, row), rowNum: i+1 };
+    }
+  }
+  return null;
+}
+
+function formatProductSpec(code, spec) {
+  const lines = Object.entries(spec.obj)
+    .filter(([k]) => !/^[A-Z]\d?$/.test(k))  // skip column letters
+    .map(([k, v]) => `${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong>`);
+  return `<strong>📦 ${code}（${escapeHtml(spec.tab)}）</strong><br><div style="font-size:12px;line-height:1.7;">${lines.join('<br>')}</div>`;
+}
+
+function lookupVendorRow(q) {
+  const tabName = findTabByPatterns('landingCost', ['廠商一覽', '廠商列表', '廠商']);
+  if (!tabName) return null;
+  const rows = state.sheetsCache.landingCost[tabName];
+  if (!rows || rows.length < 2) return null;
+  const header = rows[0];
+  const ql = q.toLowerCase();
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i] || [];
+    if (row.some(c => {
+      const s = String(c ?? '');
+      return s && (q.includes(s) || ql.includes(s.toLowerCase()));
+    })) {
+      const obj = rowToObject(header, row);
+      const lines = Object.entries(obj).map(([k,v]) => `${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong>`);
+      return `<strong>🏭 廠商一覽表（${escapeHtml(tabName)}）</strong><br><div style="font-size:12px;line-height:1.7;">${lines.join('<br>')}</div>`;
+    }
+  }
+  return null;
+}
+
+// Find last (most recent) order tab containing the product code, with cost details
+function findLastPurchaseFor(code) {
+  const cache = state.sheetsCache?.landingCost || {};
+  // Exclude reference tabs
+  const orderTabs = Object.entries(cache)
+    .filter(([name]) => !/(產品編號|產品對照|產品列表|廠商一覽|廠商列表|一覽|對照表)/.test(name))
+    .filter(([_, rows]) => rows && rows.length);
+  // Sort descending by tab name (T047-WD > T045-CSM > T043-WD; works for T-prefix scheme)
+  orderTabs.sort((a, b) => b[0].localeCompare(a[0]));
+
+  for (const [tabName, rows] of orderTabs) {
+    const matches = [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i] || [];
+      if (row.some(c => String(c ?? '').trim() === code)) {
+        matches.push({ rowNum: i + 1, cells: row });
+      }
+    }
+    if (matches.length) {
+      // Try to find header row for this tab (first non-empty row before first match)
+      let header = null;
+      for (let i = 0; i < matches[0].rowNum - 1; i++) {
+        const r = rows[i] || [];
+        if (r.length >= 3 && r.some(c => /單價|均價|數量|產品|台幣|金額/.test(String(c)))) {
+          header = r;
+        }
+      }
+      return { tab: tabName, header, matches };
+    }
+  }
+  return null;
+}
+
+function formatLastPurchase(code, last) {
+  const { tab, header, matches } = last;
+  const order = state.orders.find(o => tab.startsWith(o.id));
+  const orderInfo = order ? `${order.id} ${order.vendor} · CI ${order.piCurrency} ${(order.ciAmount||0).toLocaleString()} · ETA ${order.eta||'—'}` : tab;
+  const rowsFmt = matches.map(m => {
+    if (header) {
+      const obj = rowToObject(header, m.cells);
+      return Object.entries(obj).map(([k,v]) => `${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong>`).join(' · ');
+    }
+    return m.cells.filter(c => c != null && c !== '').map(escapeHtml).join(' | ');
+  });
+  return `<strong>📦 ${code} 上一筆採購：${escapeHtml(tab)}</strong><br>
+    <div style="font-size:11px;color:var(--ink-2);margin:4px 0;">${escapeHtml(orderInfo)}</div>
+    <div style="font-size:12px;line-height:1.7;">${rowsFmt.join('<br>')}</div>`;
+}
+
+function searchSheetsCache(q) {
+  const cache = state.sheetsCache;
+  if (!cache?.orderStatus) return '';
+  const ql = q.toLowerCase();
+  const out = [];
+  const scan = (group, label, icon) => {
+    for (const [tabName, rows] of Object.entries(cache[group] || {})) {
+      if (!rows.length) continue;
+      const header = rows[0] || [];
+      const hits = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row?.length) continue;
+        if (row.some(cell => String(cell ?? '').toLowerCase().includes(ql))) {
+          // Format: header: value pairs (only non-empty)
+          const pairs = header
+            .map((h, j) => row[j] != null && row[j] !== '' ? `${escapeHtml(h)}: <strong>${escapeHtml(row[j])}</strong>` : null)
+            .filter(Boolean)
+            .slice(0, 8)
+            .join(' · ');
+          hits.push(`第 ${i+1} 行 — ${pairs}`);
+          if (hits.length >= 5) { hits.push(`…還有更多，請開啟 Sheets 查看`); break; }
+        }
+      }
+      if (hits.length) {
+        out.push(`<strong>${icon} ${label} / ${escapeHtml(tabName)}</strong><br><div style="font-size:11px;line-height:1.6;">${hits.join('<br>')}</div>`);
+      }
+    }
+  };
+  scan('orderStatus', 'Order Status', '📋');
+  scan('landingCost', 'Landing Cost', '💰');
+  return out.join('<hr style="border:0;border-top:1px dashed var(--rule);margin:6px 0;">');
+}
+
+function handleQAUpload(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  qaSession.push({ type: 'me', text: `上傳檔案`, attach: { chip: file.type.includes('pdf')?'PDF':'檔', name: file.name } });
+  qaSession.push({ type: 'sys', text: `已收到 <strong>${escapeHtml(file.name)}</strong>。\n要把它歸到哪一張訂單？輸入合約號（例如 T047）即可關聯，或直接問問題。` });
+  renderQAFeed();
+}
+
+function toggleOrderStatusMenu(event) {
+  event?.stopPropagation();
+  const menu = document.getElementById('orderStatusMenu');
+  if (!menu) return;
+  const isOpen = menu.style.display === 'block';
+  if (!isOpen) {
+    // Update toggle label based on current order status
+    const order = state.orders.find(o => o.id === state.currentOrderId);
+    const btn = document.getElementById('orderStatusToggleBtn');
+    if (btn && order) {
+      btn.textContent = order.status === 'archived' ? '🔓 重新開啟為進行中' : '✅ 標記為已結案';
+    }
+  }
+  menu.style.display = isOpen ? 'none' : 'block';
+  // Click-outside listener
+  if (!isOpen) {
+    setTimeout(() => {
+      const handler = (e) => {
+        if (!menu.contains(e.target)) {
+          menu.style.display = 'none';
+          document.removeEventListener('click', handler);
+        }
+      };
+      document.addEventListener('click', handler);
+    }, 0);
+  }
+}
+
+function toggleArchivedStatus() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const newStatus = order.status === 'archived' ? 'cost_settlement' : 'archived';
+  const newOverride = newStatus === 'archived' ? 'archived' : 'active';
+  localStorage.setItem(`order-status-override-${order.id}`, newOverride);
+  order.status = newStatus;
+  document.getElementById('orderStatusMenu').style.display = 'none';
+  renderOrderDetail(order);
+  renderSidebar();
+  renderOrdersTable();
+  alert(`已${newStatus === 'archived' ? '標記為已結案' : '重新開啟為進行中'}`);
+}
+
+function deleteCurrentOrder() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const label = `${order.id} ${order.vendor || ''}（${order.serialNo || '無流水號'}）`;
+  if (!confirm(`確定要刪除「${label}」嗎？\n此動作無法復原。\n（不會刪除 Sheets 上的 tab；如要連 Sheet 一併刪請手動到 LC sheet 刪）`)) return;
+  // 完整抹除：state + registry + deleted set + 此單相關 localStorage
+  state.orders = state.orders.filter(o => o !== order);
+  markOrderDeleted(order.id, order.serialNo);
+  saveOrdersRegistry();
+  ['order-notes', 'order-status-override'].forEach(prefix => {
+    if (order.id) localStorage.removeItem(`${prefix}-${order.id}`);
+    if (order.serialNo) localStorage.removeItem(`${prefix}-${order.serialNo}`);
+  });
+  state.currentOrderId = null;
+  document.getElementById('orderStatusMenu').style.display = 'none';
+  renderSidebar();
+  renderOrdersTable();
+  if (typeof renderArchivedOrders === 'function') renderArchivedOrders();
+  navTo('home', document.querySelector('.nav-home'));
+}
+
+function nowStamp() {
+  const n = new Date();
+  return `${String(n.getMonth()+1).padStart(2,'0')}/${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+
+// ════════════════════════════════════════════════════════
+// ORDER CONTENT ACTIONS
+// ════════════════════════════════════════════════════════
+
+function saveOrderContent() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  if (!order) return;
+  const today = new Date();
+  const dateStr = `${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const diffs = [];
+  document.querySelectorAll('#acc-content-body [data-edit]').forEach(el => {
+    const path = el.getAttribute('data-edit').split('.');
+    const newRaw = el.textContent.trim();
+    let target = order, key;
+    if (path[0] === 'items') {
+      const idx = parseInt(path[1]);
+      target = order.items[idx];
+      key = path[2];
+    } else {
+      key = path[0];
+    }
+    const oldVal = target[key];
+    const isNum = typeof oldVal === 'number';
+    const newVal = isNum ? (newRaw === '' ? null : parseFloat(newRaw)) : newRaw;
+    if (isNum && isNaN(newVal)) return;
+    if (String(oldVal ?? '') !== String(newVal ?? '')) {
+      let fieldLabel;
+      if (path[0] === 'items') {
+        const codeMap = { name: '品項', qty: '數量', unit: '單位' };
+        fieldLabel = `${order.items[parseInt(path[1])].code} ${codeMap[key] || key}`;
+      } else if (key === 'ciAmount') {
+        fieldLabel = 'CI 金額';
+      } else {
+        fieldLabel = key;
+      }
+      diffs.push({ date: dateStr, source: '手動修改', field: fieldLabel, from: String(oldVal ?? ''), to: String(newVal ?? '') });
+      target[key] = newVal;
+    }
+  });
+  if (!diffs.length) { alert('沒有變更'); return; }
+  order.changelog = [...(order.changelog || []), ...diffs];
+  // Add sys msg
+  const now = new Date();
+  const time = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  order.chatLog.push({
+    type: 'sys',
+    text: `訂單修改：${diffs.map(d => `${d.field} ${d.from} → ${d.to}`).join('；')}`,
+    time
+  });
+  renderOrderDetail(order);
+  alert(`已儲存 ${diffs.length} 項變更`);
+}
+
+function showChangelog() {
+  const order = state.orders.find(o => o.id === state.currentOrderId);
+  const tbody = document.querySelector('#changelogTable tbody');
+  if (!order?.changelog?.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-3);padding:20px;">無變更記錄</td></tr>';
+  } else {
+    tbody.innerHTML = order.changelog.map(c => `
+      <tr>
+        <td>${c.date}</td>
+        <td>${c.source}</td>
+        <td>${c.field}</td>
+        <td>${c.from} → <strong>${c.to}</strong></td>
+      </tr>`).join('');
+  }
+  document.getElementById('changelogModalTitle').textContent = `📝 ${order.id} 變更歷程`;
+  document.getElementById('changelogModal').classList.add('open');
+}
+
+function closeChangelogModal() {
+  document.getElementById('changelogModal').classList.remove('open');
+}
+
+// ════════════════════════════════════════════════════════
+// GOOGLE SHEETS API (GIS Token Model)
+// ════════════════════════════════════════════════════════
+
+const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/documents.readonly';
+const PROCUREMENT_DOC_ID = '1OZw5blYxu8yaKvjVaoqtsnO7exukaINxLHCRB6ZWxeo';
+let _tokenClient = null;
+let _accessToken = null;
+let _tokenExpiresAt = 0;
+let _silentAuth = false;
+
+function _gAuthBtnUpdate(state) {
+  const btn = document.getElementById('gAuthBtn');
+  if (!btn) return;
+  if (state === 'connected') {
+    btn.textContent = '✅ 已連結 Google';
+    btn.style.background = 'rgba(46,160,67,0.2)';
+    btn.style.color = '#3fb950';
+  } else if (state === 'connecting') {
+    btn.textContent = '⏳ 授權中…';
+  } else {
+    btn.textContent = '🔒 連結 Google';
+    btn.style.background = 'rgba(255,255,255,0.06)';
+    btn.style.color = 'rgba(255,255,255,0.6)';
+  }
+}
+
+function initGoogleAuth() {
+  if (!window.google?.accounts?.oauth2) {
+    alert('Google Identity Services 尚未載入，請稍後再試');
+    return null;
+  }
+  if (CONFIG.GOOGLE_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
+    alert('請先在 CONFIG.GOOGLE_CLIENT_ID 填入 Web application OAuth Client ID。\n\n設定步驟：\n1. Google Cloud Console → 憑證 → 建立 OAuth 2.0 Web 應用程式\n2. 授權的 JavaScript 來源加入：\n   • http://localhost:8080\n   • https://你的帳號.github.io\n3. 把 Client ID 填入 procurement-app.html 第 1644 行附近');
+    return null;
+  }
+  if (_tokenClient) return _tokenClient;
+  _tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.GOOGLE_CLIENT_ID,
+    scope: SHEETS_SCOPE,
+    callback: (resp) => {
+      if (resp.error) {
+        _gAuthBtnUpdate('disconnected');
+        if (!_silentAuth) alert('授權失敗：' + resp.error);
+        _silentAuth = false;
+        return;
+      }
+      _silentAuth = false;
+      _accessToken = resp.access_token;
+      _tokenExpiresAt = Date.now() + (resp.expires_in - 60) * 1000;
+      _gAuthBtnUpdate('connected');
+      onGoogleAuthSuccess();
+    }
+  });
+  return _tokenClient;
+}
+
+function autoSignIn() {
+  const tc = initGoogleAuth();
+  if (!tc) return;
+  _silentAuth = true;
+  tc.requestAccessToken({ prompt: '' });
+}
+
+function toggleGoogleAuth() {
+  if (_accessToken && Date.now() < _tokenExpiresAt) {
+    // logout
+    google.accounts.oauth2.revoke(_accessToken, () => {});
+    _accessToken = null;
+    _tokenExpiresAt = 0;
+    _gAuthBtnUpdate('disconnected');
+    return;
+  }
+  const tc = initGoogleAuth();
+  if (!tc) return;
+  _gAuthBtnUpdate('connecting');
+  tc.requestAccessToken({ prompt: '' });
+}
+
+async function ensureToken() {
+  if (_accessToken && Date.now() < _tokenExpiresAt) return _accessToken;
+  return new Promise((resolve, reject) => {
+    const tc = initGoogleAuth();
+    if (!tc) { reject(new Error('Auth not initialized')); return; }
+    const origCb = tc.callback;
+    tc.callback = (resp) => {
+      origCb(resp);
+      if (resp.error) reject(new Error(resp.error));
+      else resolve(resp.access_token);
+    };
+    tc.requestAccessToken({ prompt: '' });
+  });
+}
+
+async function readSheet(spreadsheetId, range) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) throw new Error(`readSheet ${range}: ${r.status} ${await r.text()}`);
+  return (await r.json()).values || [];
+}
+
+async function writeSheet(spreadsheetId, range, values) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  if (!r.ok) throw new Error(`writeSheet ${range}: ${r.status} ${await r.text()}`);
+  return r.json();
+}
+
+async function appendSheet(spreadsheetId, range, values) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  if (!r.ok) throw new Error(`appendSheet ${range}: ${r.status} ${await r.text()}`);
+  return r.json();
+}
+
+async function createSheetTab(spreadsheetId, title) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests: [{ addSheet: { properties: { title } } }] })
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    if (/already exists/i.test(txt)) return { existing: true };
+    throw new Error(`createSheetTab ${title}: ${r.status} ${txt}`);
+  }
+  return r.json();
+}
+
+async function fetchProcurementDoc() {
+  const token = await ensureToken();
+  const url = `https://docs.googleapis.com/v1/documents/${PROCUREMENT_DOC_ID}?includeTabsContent=true`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`Doc fetch ${r.status}: ${txt}`);
+  }
+  return r.json();
+}
+
+function _bodyContentToText(content) {
+  const out = [];
+  const walkParagraph = (p) => {
+    let raw = '';
+    for (const e of p.elements || []) if (e.textRun?.content) raw += e.textRun.content;
+    // Trailing newline stays (already in textRun); we'll strip+re-add as needed
+    const trailingNL = raw.endsWith('\n');
+    let line = trailingNL ? raw.slice(0, -1) : raw;
+
+    // Heading prefix
+    const styleType = p.paragraphStyle?.namedStyleType || '';
+    const hMatch = styleType.match(/^HEADING_(\d)/);
+    if (hMatch) {
+      const level = Math.min(parseInt(hMatch[1], 10), 6);
+      line = '\n' + '#'.repeat(level) + ' ' + line.trim();
+    } else if (styleType === 'TITLE') {
+      line = '\n# ' + line.trim();
+    } else if (styleType === 'SUBTITLE') {
+      line = '\n## ' + line.trim();
+    }
+
+    // Bullet / numbered list prefix
+    if (p.bullet) {
+      const level = p.bullet.nestingLevel || 0;
+      const indent = '  '.repeat(level);
+      line = `${indent}• ${line.replace(/^\s+/, '')}`;
+    }
+
+    return line + (trailingNL ? '\n' : '');
+  };
+  for (const elem of content || []) {
+    if (elem.paragraph) out.push(walkParagraph(elem.paragraph));
+    if (elem.table) {
+      for (const row of elem.table.tableRows || []) {
+        const cells = (row.tableCells || []).map(cell =>
+          (cell.content || []).map(c => c.paragraph ? walkParagraph(c.paragraph).replace(/\n/g, ' ') : '').join('')
+        );
+        out.push(cells.join(' | ') + '\n');
+      }
+    }
+  }
+  // Don't trim aggressively — user wants full content
+  return out.join('').replace(/\n{3,}/g, '\n\n').trimEnd();
+}
+
+// =====================================================================
+// Vendor tab parser (rewritten 2026-05-11)
+// =====================================================================
+// 目標：把「國內廠商特別注意事項 / 國外廠商特別注意事項」兩個 tab 的內容
+// 一字不漏地讀出來，並依「廠商分隔點」切成多筆 {name, html, raw}。
+//
+// 分隔點偵測（任一條成立即視為新廠商起始）：
+//   (1) 段落樣式為 HEADING_1/2/3/4/5/6
+//   (2) 段落純文字符合「X=Y」或「X＝Y」格式 (alias=realName)，前後可有括號注記
+// 註：第一個分隔點之前的段落（如「～國外廠商特別注意事項」「*業務不能看…」)
+//     視為 intro，整段捨棄。
+// 渲染輸出為保留 Doc 排版的 HTML（保留 heading、bullet、bold、italic、underline、table）。
+// =====================================================================
+
+// 使用者提供的廠商白名單（2026-05-11）。
+// 偵測規則：段落「乾淨後」的文字 equals 任一 alias → 視為新廠商起點。
+const VENDOR_LIST_DOMESTIC = [
+  { name: '原名',            aliases: ['原名'] },
+  { name: '利東',            aliases: ['利東'] },
+  { name: '吉利角 / 中益',   aliases: ['吉利角', '中益', '吉利角，中益', '吉利角, 中益', '吉利角 中益'] },
+  { name: '誌冠',            aliases: ['誌冠'] },
+  { name: '駿佑',            aliases: ['駿佑'] },
+  { name: '禾勤',            aliases: ['禾勤'] },
+  { name: '全福纖維',        aliases: ['全福纖維', '全福'] },
+  { name: '琦林',            aliases: ['琦林'] },
+  { name: '福懋',            aliases: ['福懋'] },
+  { name: '長興 & 超維諾',   aliases: ['長興&超維諾', '長興 & 超維諾', '長興', '超維諾'] },
+  { name: '上偉',            aliases: ['上偉'] }
+];
+const VENDOR_LIST_OVERSEAS = [
+  { name: 'Wanda',                       aliases: ['Wanda', 'WANDA'] },
+  { name: 'Toyobo',                      aliases: ['Toyobo', 'TOYOBO'] },
+  { name: 'Asia Kangnam',                aliases: ['Asia Kangnam', 'AsiaKangnam', 'ASIA KANGNAM'] },
+  { name: 'Silbrico',                    aliases: ['Silbrico', 'SILBRICO'] },
+  { name: '上海傾雲',                    aliases: ['上海傾雲', '上海卿雲'] },
+  { name: '秦皇島',                      aliases: ['秦皇島'] },
+  { name: '泰安現代 → 泰安諾克瓦',       aliases: ['泰安現代》泰安諾克瓦', '泰安現代>泰安諾克瓦', '泰安現代', '泰安諾克瓦'] },
+  { name: 'Montex',                      aliases: ['Montex', 'MONTEX'] },
+  { name: 'Nexus FRP',                   aliases: ['Nexus FRP', 'NexusFRP', 'NEXUS FRP', 'Nexus'] }
+];
+
+function _vendorParaText(p) {
+  return (p.elements || []).map(e => e.textRun?.content || '').join('').replace(/\n+$/, '');
+}
+
+// 把段落純文字清掉裝飾符號/全形空白，再去除尾端括號與標點
+function _cleanLineForMatch(text) {
+  return text
+    .replace(/^[~～*&#\-•·▪◆\s　]+/, '')                 // 開頭符號
+    .replace(/[（(][^）)]*[)）]\s*$/, '')                     // 尾端括號註記
+    .replace(/[:：，,。.；;！!?？\s　]+$/, '')             // 尾端標點
+    .trim();
+}
+
+function _matchVendorAlias(text, vendorList) {
+  const cleaned = _cleanLineForMatch(text);
+  if (!cleaned || cleaned.length > 30) return null;
+  for (const v of vendorList) {
+    for (const alias of v.aliases) {
+      if (cleaned === alias) return v.name;
+      if (cleaned.toLowerCase() === alias.toLowerCase()) return v.name;
+    }
+  }
+  return null;
+}
+
+function _vendorRunHtml(run) {
+  if (!run?.textRun) return '';
+  const ts = run.textRun.textStyle || {};
+  let html = escapeHtml(run.textRun.content || '').replace(/\n/g, '');
+  if (!html) return '';
+  if (ts.bold) html = `<strong>${html}</strong>`;
+  if (ts.italic) html = `<em>${html}</em>`;
+  if (ts.underline) html = `<u>${html}</u>`;
+  if (ts.strikethrough) html = `<s>${html}</s>`;
+  return html;
+}
+
+function _vendorParaHtml(p) {
+  const inner = (p.elements || []).map(_vendorRunHtml).join('').trim();
+  if (!inner) return '';
+  const style = p.paragraphStyle?.namedStyleType || '';
+  if (/^HEADING_[1-6]$/.test(style)) {
+    const lvl = Math.min(6, parseInt(style.slice(-1), 10) + 2);
+    return `<h${lvl} style="margin:10px 0 4px;">${inner}</h${lvl}>`;
+  }
+  if (p.bullet) {
+    const nest = (p.bullet.nestingLevel || 0);
+    return `<div style="padding-left:${(nest + 1) * 16}px;">• ${inner}</div>`;
+  }
+  return `<p style="margin:4px 0;">${inner}</p>`;
+}
+
+function _vendorTableHtml(table) {
+  const rows = (table.tableRows || []).map(row => {
+    const cells = (row.tableCells || []).map(cell => {
+      const body = (cell.content || []).map(c => c.paragraph ? _vendorParaHtml(c.paragraph) : '').join('');
+      return `<td style="border:1px solid #ccc;padding:4px 6px;vertical-align:top;">${body}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+  return `<table style="border-collapse:collapse;margin:6px 0;">${rows}</table>`;
+}
+
+function parseVendorTab(documentTab, vendorList) {
+  const entries = [];
+  let current = null;
+  const seenLines = [];
+  const closeCurrent = () => { if (current) entries.push(current); current = null; };
+
+  for (const elem of documentTab?.body?.content || []) {
+    if (elem.paragraph) {
+      const text = _vendorParaText(elem.paragraph).trim();
+      const matched = text ? _matchVendorAlias(text, vendorList) : null;
+      if (text) seenLines.push({ text, matched });
+      if (matched) {
+        // 同一 canonical name 重複出現（例：吉利角 與 中益 是同一組）→ 不新切，延續
+        if (current && current.name === matched) continue;
+        closeCurrent();
+        current = { name: matched, html: '', raw: '' };
+        continue;
+      }
+      if (current) {
+        const html = _vendorParaHtml(elem.paragraph);
+        if (html) {
+          current.html += html;
+          current.raw += text + '\n';
+        }
+      }
+    } else if (elem.table && current) {
+      current.html += _vendorTableHtml(elem.table);
+    }
+  }
+  closeCurrent();
+  // Backfill：用戶白名單裡如果有名字在 doc 完全沒抓到，回傳空殼 entry 方便側邊欄顯示
+  for (const v of vendorList) {
+    if (!entries.find(e => e.name === v.name)) {
+      entries.push({ name: v.name, html: '<p style="color:var(--ink-3);">（採購文件中找不到此廠商段落）</p>', raw: '' });
+    }
+  }
+  console.log('[parseVendorTab] 切出 vendors：', entries.map(e => e.name));
+  console.log('[parseVendorTab] 段落掃描：', seenLines);
+  return entries;
+}
+
+
+// Flatten doc tabs (handles nested childTabs) into [{tabId, title, text, entries?, parentId, parentTitle, depth}]
+function flattenDocTabs(doc) {
+  const out = [];
+  const walk = (tabs, parentId, parentTitle, depth) => {
+    for (const tab of tabs || []) {
+      const props = tab.tabProperties || {};
+      const docTab = tab.documentTab;
+      const text = docTab?.body ? _bodyContentToText(docTab.body.content) : '';
+      const title = (props.title || '').trim();
+      const entry = {
+        tabId: props.tabId || '',
+        title,
+        text,
+        parentId: parentId || null,
+        parentTitle: parentTitle || null,
+        depth
+      };
+      // For vendor tabs, split by user-provided whitelist
+      if (docTab && /國內廠商.*注意事項/.test(title)) {
+        entry.vendorEntries = parseVendorTab(docTab, VENDOR_LIST_DOMESTIC);
+      } else if (docTab && /國外廠商.*注意事項/.test(title)) {
+        entry.vendorEntries = parseVendorTab(docTab, VENDOR_LIST_OVERSEAS);
+      }
+      out.push(entry);
+      if (tab.childTabs && tab.childTabs.length) {
+        walk(tab.childTabs, props.tabId, props.title, depth + 1);
+      }
+    }
+  };
+  if (doc.tabs && doc.tabs.length) {
+    walk(doc.tabs, null, null, 0);
+  } else if (doc.body) {
+    out.push({ tabId: '', title: doc.title || '', text: _bodyContentToText(doc.body.content), parentId: null, parentTitle: null, depth: 0 });
+  }
+  return out;
+}
+
+// Backwards-compat: flatten all tabs into a single text blob
+function docToText(doc) {
+  const tabs = flattenDocTabs(doc);
+  return tabs.map(t => `## ${t.title}\n${t.text}`).join('\n\n').trim();
+}
+
+async function getSheetMeta(spreadsheetId) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets(properties(sheetId,title))`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) throw new Error(`getSheetMeta: ${r.status} ${await r.text()}`);
+  return (await r.json()).sheets || [];
+}
+
+const DOC_CACHE_KEY = 'procurement-doc-cache';
+// Bump this when parser logic changes — invalidates cached vendorEntries / parsed tabs.
+const DOC_CACHE_SCHEMA = 'v3-whitelist-2026-05-11';
+
+function readDocCacheFromStorage() {
+  try {
+    const raw = localStorage.getItem(DOC_CACHE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (obj?.schema !== DOC_CACHE_SCHEMA) {
+      console.log(`[doc cache] schema 不符（cache=${obj?.schema}, code=${DOC_CACHE_SCHEMA}）→ 將強制重抓`);
+      return null;
+    }
+    return obj && Array.isArray(obj.tabs) ? obj : null;
+  } catch { return null; }
+}
+
+async function ensureDocCache() {
+  const cached = readDocCacheFromStorage();
+  if (cached) { state.docCache = cached; return; }
+  await refreshProcurementDoc();
+}
+
+async function refreshProcurementDoc() {
+  if (!_accessToken) { alert('請先連結 Google'); return; }
+  try {
+    const doc = await fetchProcurementDoc();
+    const tabs = flattenDocTabs(doc);
+    const fullText = tabs.map(t => `## ${t.title}\n${t.text}`).join('\n\n').trim();
+    state.docCache = { tabs, fullText, loadedAt: new Date().toISOString(), schema: DOC_CACHE_SCHEMA };
+    localStorage.setItem(DOC_CACHE_KEY, JSON.stringify(state.docCache));
+    console.log(`Doc refreshed: ${tabs.length} tabs, ${fullText.length} chars`);
+    // Re-derive vendor list from new tabs
+    state.vendors = parseVendorsFromDoc(); // returns flat list; sidebar uses domesticVendors/overseasVendors getters
+    renderSidebar();
+    // re-render current view
+    const active = document.querySelector('.page.active')?.id;
+    if (active === 'page-sop') renderSOP();
+    if (active === 'page-vendor') {
+      const title = document.getElementById('vendorPageTitle')?.textContent || '';
+      const name = title.replace(/^🏭\s*/, '').replace(/\s*—.*$/, '').trim();
+      if (name) renderVendorNotes(name);
+    }
+  } catch (e) {
+    console.error(e);
+    alert('重抓 Doc 失敗：' + e.message);
+  }
+}
+
+async function onGoogleAuthSuccess() {
+  try {
+    setSheetsLoadingStatus('載入採購文件…');
+    try {
+      await ensureDocCache();
+      console.log(`Doc cache ready: ${state.docCache?.fullText?.length || 0} chars`);
+      if (document.getElementById('page-sop').classList.contains('active')) renderSOP();
+    } catch (de) {
+      console.warn('Doc 載入失敗:', de.message);
+    }
+    setSheetsLoadingStatus('載入 Sheets 全表…');
+    await loadAllSheetsData();
+    // ⚠️ 不再自動從 LC 倒推訂單。訂單來源 = 用戶用「+新增訂單」建立 + 上傳文件解析寫 Sheets。
+    // 若要從 LC 一次性匯入歷史訂單，請點訂單 sidebar 上的「⬇ 從 LC 匯入歷史（一次性）」按鈕。
+    if (!localStorage.getItem(LC_BACKFILL_DONE_KEY) && !state.orders.length) {
+      console.info('未匯入過 LC 歷史訂單，state.orders 空。可手動觸發 backfillFromLC()。');
+    }
+    // Populate state.vendors from doc tabs
+    if (state.docCache?.tabs?.length) {
+      state.vendors = parseVendorsFromDoc();
+      renderSidebar();
+    }
+    setSheetsLoadingStatus(`已連結 · ${countSheetsRows()} 行資料`);
+  } catch (e) {
+    console.error(e);
+    setSheetsLoadingStatus('載入失敗');
+    alert('讀取資料失敗：' + e.message);
+  }
+}
+
+// Tab title patterns used to identify special tabs in the doc
+const VENDOR_DOMESTIC_TAB = '國內廠商特別注意事項';
+const VENDOR_OVERSEAS_TAB = '國外廠商特別注意事項';
+const SOP_PARENT_TAB = '採購SOP';
+// Tabs to skip in vendor/SOP UI (they're for AI context only)
+const AI_ONLY_TABS = ['進銷存採購網站系統', 'tracking 頁構想'];
+
+function getDocTabsByTitle(needle) {
+  return (state.docCache?.tabs || []).filter(t => t.title && t.title.includes(needle));
+}
+
+function getDocTabByTitle(needle) {
+  return (state.docCache?.tabs || []).find(t => t.title && t.title.includes(needle));
+}
+
+// Split a vendor-tab's text into [{name, notes}] entries.
+// A vendor entry starts at a line that looks like a heading (short, contains a name pattern,
+// followed by content). Blank-line paragraphs delimit entries when no clear heading.
+// (parseVendorEntries removed — single source of truth is parseVendorTab via tab.vendorEntries)
+
+function getDomesticVendors() {
+  const tab = getDocTabByTitle(VENDOR_DOMESTIC_TAB);
+  if (!tab) return [];
+  if (tab.vendorEntries) return tab.vendorEntries;
+  console.warn(`Doc tab "${VENDOR_DOMESTIC_TAB}" 找不到 vendorEntries — 是否未經 flattenDocTabs 處理？`);
+  return [];
+}
+
+function getOverseasVendors() {
+  const tab = getDocTabByTitle(VENDOR_OVERSEAS_TAB);
+  if (!tab) return [];
+  if (tab.vendorEntries) return tab.vendorEntries;
+  console.warn(`Doc tab "${VENDOR_OVERSEAS_TAB}" 找不到 vendorEntries — 是否未經 flattenDocTabs 處理？`);
+  return [];
+}
+
+// Returns flat list of vendor names (used for state.vendors backward compat)
+function parseVendorsFromDoc() {
+  return [...getOverseasVendors().map(v => v.name), ...getDomesticVendors().map(v => v.name)];
+}
+
+function lookupVendorInDoc(name) {
+  if (!name) return null;
+  const all = [...getOverseasVendors(), ...getDomesticVendors()];
+  const exact = all.find(v => v.name === name);
+  if (exact) return exact;
+  return all.find(v => v.name.includes(name) || name.includes(v.name)) || null;
+}
+
+// SOP: collect parent tab's own text + all child tabs (subtabs to be rendered as collapsibles)
+function getSOPSubtabs() {
+  const tabs = state.docCache?.tabs || [];
+  const parent = tabs.find(t => t.title && t.title.includes(SOP_PARENT_TAB) && !t.parentId);
+  const children = tabs.filter(t => t.parentId && t.parentTitle && t.parentTitle.includes(SOP_PARENT_TAB));
+  return { parent, children };
+}
+
+function lookupSOPInDoc() {
+  // Concatenated SOP text for QA fallback. Skips AI-only tabs.
+  const tabs = state.docCache?.tabs || [];
+  const sopTabs = tabs.filter(t =>
+    (t.title && t.title.includes(SOP_PARENT_TAB)) ||
+    (t.parentTitle && t.parentTitle.includes(SOP_PARENT_TAB))
+  );
+  if (!sopTabs.length) return null;
+  return sopTabs.map(t => `## ${t.title}\n${t.text}`).join('\n\n');
+}
+
+function setSheetsLoadingStatus(msg) {
+  const btn = document.getElementById('gAuthBtn');
+  if (btn && _accessToken) btn.textContent = msg;
+}
+
+function countSheetsRows() {
+  const cache = state.sheetsCache || { orderStatus: {}, landingCost: {} };
+  return Object.values(cache.orderStatus).reduce((s, r) => s + (r?.length || 0), 0)
+       + Object.values(cache.landingCost).reduce((s, r) => s + (r?.length || 0), 0);
+}
+
+async function loadAllSheetsData() {
+  state.sheetsCache = state.sheetsCache || { orderStatus: {}, landingCost: {} };
+  const [osTabs, lcTabs] = await Promise.all([
+    getSheetMeta(CONFIG.ORDER_STATUS_SHEET_ID),
+    getSheetMeta(CONFIG.LANDING_COST_SHEET_ID)
+  ]);
+  state.sheetsCache.orderStatusTabs = osTabs.map(t => t.properties);
+  state.sheetsCache.landingCostTabs = lcTabs.map(t => t.properties);
+
+  const readTab = (sheetId, title) =>
+    readSheet(sheetId, `${title}!A1:Z`).then(rows => [title, rows || []]).catch(e => {
+      console.warn(`讀 ${title} 失敗：`, e.message); return [title, []];
+    });
+
+  const [osResults, lcResults] = await Promise.all([
+    Promise.all(osTabs.map(t => readTab(CONFIG.ORDER_STATUS_SHEET_ID, t.properties.title))),
+    Promise.all(lcTabs.map(t => readTab(CONFIG.LANDING_COST_SHEET_ID, t.properties.title)))
+  ]);
+  state.sheetsCache.orderStatus = Object.fromEntries(osResults);
+  state.sheetsCache.landingCost = Object.fromEntries(lcResults);
+  state.sheetsCache.loadedAt = new Date().toISOString();
+  console.log(`Sheets cache loaded: ${osTabs.length} OS tabs, ${lcTabs.length} LC tabs, total ${countSheetsRows()} rows`);
+
+  // (deriveOrdersFromLC is now called from onGoogleAuthSuccess after this function returns;
+  //  no need to call it here. We just populate the cache here.)
+}
+
+// Extract structured order data from a Landing Cost tab's rows (best-effort, header-aware).
+function extractLCData(rows) {
+  const safe = (v) => v == null ? '' : String(v).trim();
+  const num = (v) => {
+    const n = parseFloat(String(v ?? '').replace(/[^\d.\-]/g, ''));
+    return isNaN(n) ? 0 : n;
+  };
+  const SECTION_PATTERNS = {
+    items:    /(訂單細節|CI明細|商品明細|CI\s*Detail|品項清單)/i,
+    payment:  /(付款細目|付款明細|水單明細|匯款明細)/i,
+    charges:  /(其他費用|費用明細|成本費用|附加費用)/i,
+    avg:      /(成本.*均價|均價計算|成本計算|現均價)/i
+  };
+
+  // Step 1: locate section start rows by single-cell-section-title pattern
+  const sectionStarts = {};
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const nonEmpty = row.filter(c => safe(c) !== '');
+    if (nonEmpty.length === 0) continue;
+    // Section titles are usually short text in row's first non-empty cell (≤2 non-empty cells)
+    if (nonEmpty.length <= 2) {
+      const first = safe(nonEmpty[0]);
+      for (const [key, pattern] of Object.entries(SECTION_PATTERNS)) {
+        if (sectionStarts[key] == null && pattern.test(first)) {
+          sectionStarts[key] = i;
+          break;
+        }
+      }
+    }
+  }
+
+  // Section bounds: [sectionStart, nextSectionStart)
+  const sectionOrder = Object.keys(sectionStarts).sort((a, b) => sectionStarts[a] - sectionStarts[b]);
+  const sectionBound = (key) => {
+    const start = sectionStarts[key];
+    if (start == null) return null;
+    const idx = sectionOrder.indexOf(key);
+    const nextKey = sectionOrder[idx + 1];
+    const end = nextKey != null ? sectionStarts[nextKey] : rows.length;
+    return { start, end };
+  };
+
+  // KV lookup — search globally (header info usually at top)
+  const findKV = (...labels) => {
+    for (const row of rows || []) {
+      for (let i = 0; i < row.length; i++) {
+        const cell = safe(row[i]);
+        if (!cell) continue;
+        if (labels.some(l => cell === l || cell.startsWith(l) || cell.includes(l))) {
+          for (let j = i + 1; j < row.length; j++) {
+            const v = safe(row[j]);
+            if (v) return v;
+          }
+        }
+      }
+    }
+    return '';
+  };
+
+  // Find column-header row within a bound: row containing all "mustHave" patterns
+  const findHeaderInBound = (bound, mustHave) => {
+    if (!bound) return null;
+    for (let i = bound.start; i < bound.end; i++) {
+      const joined = (rows[i] || []).map(safe).join('|');
+      if (mustHave.every(p => joined.includes(p))) return { idx: i, header: rows[i].map(safe) };
+    }
+    return null;
+  };
+  const colIndex = (header, ...patterns) => {
+    for (const p of patterns) {
+      const i = header.findIndex(h => h && h.includes(p));
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+
+  // Step 2: extract items from items section. Tolerate up to 2 consecutive blank rows.
+  let items = [];
+  const itemsBound = sectionBound('items');
+  let itemsHdr = findHeaderInBound(itemsBound, ['產品', '數量']);
+  // If no items section detected, try global header search but skip if it falls inside avg section
+  if (!itemsHdr) {
+    const avgBound = sectionBound('avg');
+    for (let i = 0; i < rows.length; i++) {
+      const joined = (rows[i] || []).map(safe).join('|');
+      if (joined.includes('產品') && joined.includes('數量') && !joined.includes('現購量')) {
+        if (avgBound && i >= avgBound.start) continue;
+        itemsHdr = { idx: i, header: rows[i].map(safe) };
+        break;
+      }
+    }
+  }
+  if (itemsHdr) {
+    const codeCol = colIndex(itemsHdr.header, '產品編號', '產品');
+    const nameCol = colIndex(itemsHdr.header, '品項', '品名');
+    const qtyCol = colIndex(itemsHdr.header, '數量');
+    const priceCol = itemsHdr.header.findIndex(h => /單價/.test(h) && !/台幣/.test(h));
+    const stopAt = itemsBound ? itemsBound.end : rows.length;
+    let blankCount = 0;
+    for (let i = itemsHdr.idx + 1; i < stopAt; i++) {
+      const row = rows[i] || [];
+      const code = safe(row[codeCol]);
+      if (!code) {
+        blankCount++;
+        if (blankCount >= 3) break;  // 3 consecutive blanks = end
+        continue;
+      }
+      blankCount = 0;
+      if (/^(付款|其他費用|成本|均價|Total|合計|現購量)/.test(code)) break;
+      items.push({
+        code,
+        name: nameCol >= 0 ? safe(row[nameCol]) : '',
+        qty: qtyCol >= 0 ? num(row[qtyCol]) : 0,
+        unit: '',
+        unitPrice: priceCol >= 0 ? num(row[priceCol]) : 0
+      });
+      if (items.length > 100) break;
+    }
+  }
+
+  // Step 3: payment rows within payment section
+  const payment = [];
+  const payBound = sectionBound('payment');
+  let payHdr = findHeaderInBound(payBound, ['佔比', '匯率']) || findHeaderInBound(payBound, ['付款匯率', '付款金額']);
+  if (!payHdr) {
+    // Global search
+    for (let i = 0; i < rows.length; i++) {
+      const joined = (rows[i] || []).map(safe).join('|');
+      if (joined.includes('佔比') && joined.includes('匯率')) { payHdr = { idx: i, header: rows[i].map(safe) }; break; }
+    }
+  }
+  if (payHdr) {
+    const ratioCol = colIndex(payHdr.header, '佔比', '比例');
+    const rateCol = colIndex(payHdr.header, '付款匯率', '匯率');
+    const amtCol = payHdr.header.findIndex(h => /(付款金額|金額)/.test(h));
+    const feeCol = colIndex(payHdr.header, '手續費');
+    const customsRateCol = colIndex(payHdr.header, '海關匯率');
+    const stopAt = payBound ? payBound.end : rows.length;
+    let blankCount = 0;
+    for (let i = payHdr.idx + 1; i < stopAt; i++) {
+      const row = rows[i] || [];
+      const ratio = ratioCol >= 0 ? safe(row[ratioCol]) : '';
+      const amt = amtCol >= 0 ? num(row[amtCol]) : 0;
+      if (!ratio && !amt) {
+        blankCount++;
+        if (blankCount >= 3) break;
+        continue;
+      }
+      blankCount = 0;
+      if (/^(其他費用|成本|均價|Total)/.test(ratio)) break;
+      payment.push({
+        ratio,
+        rate: rateCol >= 0 ? num(row[rateCol]) : null,
+        amount: amt || null,
+        fee: feeCol >= 0 ? num(row[feeCol]) : null,
+        customsRate: customsRateCol >= 0 ? num(row[customsRateCol]) : null
+      });
+      if (payment.length > 10) break;
+    }
+  }
+
+  // Step 4: charges via KV (no section bound needed — labels unique)
+  const charges = {
+    portFee: num(findKV('港務費')) || null,
+    truckFee: num(findKV('拖車費')) || null,
+    customsDocFee: num(findKV('報關費')) || null,
+    importTax: num(findKV('進口稅')) || null,
+    containerFee: num(findKV('吊櫃費')) || null
+  };
+
+  // Step 5: avg rows within avg section
+  const avgRows = [];
+  const avgBound = sectionBound('avg');
+  let avgHdr = findHeaderInBound(avgBound, ['現購量', '台幣']) || findHeaderInBound(avgBound, ['現購量']);
+  if (!avgHdr) {
+    for (let i = 0; i < rows.length; i++) {
+      const joined = (rows[i] || []).map(safe).join('|');
+      if (joined.includes('現購量') && (joined.includes('台幣') || joined.includes('現均價'))) {
+        avgHdr = { idx: i, header: rows[i].map(safe) }; break;
+      }
+    }
+  }
+  if (avgHdr) {
+    const codeCol = colIndex(avgHdr.header, '產品編號', '產品');
+    const qtyCol = colIndex(avgHdr.header, '現購量');
+    const twdUnitCol = avgHdr.header.findIndex(h => /台幣.*單價|台幣價/.test(h));
+    const stockCol = colIndex(avgHdr.header, '庫存');
+    const prevAvgCol = colIndex(avgHdr.header, '前均價');
+    const currentAvgCol = colIndex(avgHdr.header, '現均價');
+    const stopAt = avgBound ? avgBound.end : rows.length;
+    let blankCount = 0;
+    for (let i = avgHdr.idx + 1; i < stopAt; i++) {
+      const row = rows[i] || [];
+      const code = safe(row[codeCol]);
+      if (!code) {
+        blankCount++;
+        if (blankCount >= 3) break;
+        continue;
+      }
+      blankCount = 0;
+      avgRows.push({
+        code,
+        qty: qtyCol >= 0 ? num(row[qtyCol]) : 0,
+        twdUnitPrice: twdUnitCol >= 0 ? (num(row[twdUnitCol]) || null) : null,
+        stock: stockCol >= 0 ? (num(row[stockCol]) || null) : null,
+        prevAvg: prevAvgCol >= 0 ? (num(row[prevAvgCol]) || null) : null,
+        currentAvg: currentAvgCol >= 0 ? (num(row[currentAvgCol]) || null) : null
+      });
+      if (avgRows.length > 100) break;
+    }
+  }
+
+  // Try to pull CI 金額 directly if present
+  const ciAmountRaw = findKV('CI金額', 'CI 金額', 'CI Amount', 'Total CI');
+  const ciAmount = ciAmountRaw ? num(ciAmountRaw) : null;
+
+  return {
+    serialNo: findKV('流水號'),
+    etd: findKV('ETD'),
+    eta: findKV('ETA'),
+    containerType: findKV('貨櫃'),
+    piCurrency: findKV('幣別', '原幣'),
+    paymentTerms: findKV('付款方式'),
+    ciAmount,
+    items, payment, charges, avgRows,
+    totalCharges: ['portFee','truckFee','customsDocFee','importTax','containerFee']
+      .reduce((s, k) => s + (charges[k] || 0), 0),
+    _diagnostic: { sectionStarts, hasItemsHdr: !!itemsHdr, hasPayHdr: !!payHdr, hasAvgHdr: !!avgHdr }
+  };
+}
+
+// Merge LC tab data into an order object (only fills missing values).
+function enrichOrderFromLCTab(order, tabName) {
+  const rows = state.sheetsCache?.landingCost?.[tabName];
+  if (!rows || !rows.length) return false;
+  const lc = extractLCData(rows);
+  let changed = false;
+  const setIf = (key, val) => { if (val && (order[key] == null || order[key] === '')) { order[key] = val; changed = true; } };
+  setIf('serialNo', lc.serialNo);
+  setIf('etd', lc.etd);
+  setIf('eta', lc.eta);
+  setIf('containerType', lc.containerType);
+  setIf('piCurrency', lc.piCurrency);
+  setIf('paymentTerms', lc.paymentTerms);
+  if (lc.items.length && (!order.items || !order.items.length)) {
+    order.items = lc.items;
+    changed = true;
+  }
+  // Always populate landingCost structure from LC tab data
+  order.landingCost = {
+    payment: lc.payment,
+    charges: lc.charges,
+    avgRows: lc.avgRows.length ? lc.avgRows : (order.items || []).map(it => ({
+      code: it.code, qty: it.qty, stock: null, prevAvg: null
+    })),
+    fromSheet: true
+  };
+  // Compute paidAmount from payment installments
+  if (lc.payment.length) {
+    const paid = lc.payment.reduce((s, p) => s + (p.amount || 0), 0);
+    if (paid && !order.paidAmount) { order.paidAmount = paid; changed = true; }
+  }
+  // Compute ciAmount from items × unitPrice
+  if (lc.items.length && !order.ciAmount) {
+    const ci = lc.items.reduce((s, it) => s + (it.qty * it.unitPrice), 0);
+    if (ci) { order.ciAmount = ci; changed = true; }
+  }
+  return changed;
+}
+
+// After all sheets loaded, walk every order and try to enrich from its LC tab.
+function enrichAllOrdersFromLC() {
+  if (!state.orders.length || !state.sheetsCache?.landingCost) return;
+  const tabNames = Object.keys(state.sheetsCache.landingCost);
+  for (const order of state.orders) {
+    let tabName = order.sheetsTabName;
+    if (!tabName || !state.sheetsCache.landingCost[tabName]) {
+      // Try to find a matching tab by ID prefix (T732-WD, etc.)
+      tabName = tabNames.find(t => t.toUpperCase().startsWith(order.id.toUpperCase() + '-')) ||
+                tabNames.find(t => t.toUpperCase().startsWith(order.id.toUpperCase()));
+      if (tabName) order.sheetsTabName = tabName;
+    }
+    if (!tabName) continue;
+    enrichOrderFromLCTab(order, tabName);
+    // Also store gid for iframe preview
+    const meta = state.sheetsCache?.landingCostTabs?.find(t => t.title === tabName);
+    if (meta && order.lcTabGid == null) order.lcTabGid = meta.sheetId;
+  }
+}
+
+function confirmBackfillFromLC() {
+  const done = localStorage.getItem(LC_BACKFILL_DONE_KEY);
+  const msg = done
+    ? `上次已執行過 backfill（${done}）。\n再次執行只會補入「現有 registry 沒有 + 沒被刪除」的 LC tabs。\n要繼續嗎？`
+    : `這是一次性動作：把 LC sheet 所有 T 開頭 tab 倒過來建立訂單條目。\n用戶已刪除的訂單不會復活。\n要執行嗎？`;
+  if (!confirm(msg)) return;
+  if (!state.sheetsCache?.landingCostTabs?.length) {
+    alert('請先連結 Google');
+    return;
+  }
+  deriveOrdersFromLC();
+}
+
+// ⚠️ 一次性匯入歷史訂單。不該自動跑——只有用戶在 UI 上明確按 backfill 按鈕才執行。
+// 已被用戶刪除的 ID（deleted-order-ids-v1）會被跳過，不會死灰復燃。
+function deriveOrdersFromLC() {
+  const lcTabsMeta = state.sheetsCache?.landingCostTabs || [];
+  if (!lcTabsMeta.length) { console.warn('Landing Cost: 無 tabs metadata'); return; }
+  const refPatterns = /(產品編號|產品對照|產品列表|廠商一覽|廠商列表|對照表|一覽|index|目錄)/i;
+  const deletedSet = getDeletedOrderIds();
+
+  const newOrders = [];
+  const skipped = [];
+  for (const meta of lcTabsMeta) {
+    const title = meta.title || '';
+    if (refPatterns.test(title)) { skipped.push({ title, reason: '參考 tab' }); continue; }
+    const m = title.match(/[Tt](\d{2,4})/);
+    if (!m) { skipped.push({ title, reason: '無 T-數字' }); continue; }
+    const orderId = 'T' + m[1];
+    if (deletedSet.has(orderId)) { skipped.push({ title, reason: '已被用戶刪除' }); continue; }
+    const vendorMatch = title.match(/[Tt]\d{2,4}[\s\-_]*([A-Za-z一-鿿]+)/);
+    const vendor = vendorMatch ? vendorMatch[1] : '';
+
+    const rows = state.sheetsCache.landingCost[title] || [];
+    const lcData = extractLCData(rows);
+
+    // Auto-determine status:
+    //   - 空 tab（無 items 也無 avgRows）→ ordered（剛下單，等 PI/CI）
+    //   - avgRows 全部算完 → archived
+    //   - 其餘 → cost_settlement
+    const allAvgDone = lcData.avgRows && lcData.avgRows.length > 0 &&
+                       lcData.avgRows.every(r => r.currentAvg != null && r.currentAvg > 0);
+    const isEmptyTab = (!lcData.items || lcData.items.length === 0) &&
+                       (!lcData.avgRows || lcData.avgRows.length === 0);
+    let status = isEmptyTab ? 'ordered'
+               : allAvgDone ? 'archived'
+               : 'cost_settlement';
+
+    // One-time facts from user (2026-05-09):
+    //   T716–T730 are closed cases; T732 still in progress (awaiting 報關帳單 → 均價未定).
+    //   T731 已被使用者清空（2026-05-12），改走 isEmptyTab → 'ordered'。
+    const nNum = parseInt(m[1], 10);
+    if (nNum >= 716 && nNum <= 730) status = 'archived';
+    else if (nNum === 732) status = 'cost_settlement';
+
+    // localStorage override (manual user toggle wins over everything)
+    const override = localStorage.getItem(`order-status-override-${orderId}`);
+    if (override === 'archived') status = 'archived';
+    else if (override === 'active') status = 'cost_settlement';
+
+    newOrders.push({
+      id: orderId,
+      serialNo: String(lcData.serialNo || ''),
+      vendor,
+      vendorFull: '',
+      containerType: String(lcData.containerType || ''),
+      etd: String(lcData.etd || ''),
+      eta: String(lcData.eta || ''),
+      archivedAt: '',
+      status,
+      paymentTerms: String(lcData.paymentTerms || ''),
+      piAmount: 0,
+      piCurrency: String(lcData.piCurrency || ''),
+      ciAmount: lcData.ciAmount || (lcData.items || []).reduce((s, it) => s + (it.qty * it.unitPrice), 0),
+      paidAmount: (lcData.payment || []).reduce((s, p) => s + (p.amount || 0), 0),
+      items: lcData.items || [],
+      documents: [],
+      changelog: [],
+      notes: localStorage.getItem(`order-notes-${orderId}`) || '',
+      chatLog: [{ type: 'sys', text: `從 Landing Cost tab「${title}」載入`, time: nowStamp() }],
+      landingCost: {
+        fromSheet: true,
+        payment: lcData.payment || [],
+        charges: lcData.charges || {},
+        avgRows: lcData.avgRows || []
+      },
+      sheetsTabName: title,
+      sheetsUrl: `https://docs.google.com/spreadsheets/d/${CONFIG.LANDING_COST_SHEET_ID}/edit#gid=${meta.sheetId}`,
+      lcTabGid: meta.sheetId
+    });
+  }
+
+  // Merge：不覆蓋現有 state.orders（可能有用戶手動建的）。已有同 id 的不重複加。
+  const existingIds = new Set(state.orders.map(o => o.id));
+  const toAdd = newOrders.filter(o => !existingIds.has(o.id));
+  state.orders = [...state.orders, ...toAdd];
+  saveOrdersRegistry();
+  localStorage.setItem(LC_BACKFILL_DONE_KEY, new Date().toISOString());
+  const activeCount = state.orders.filter(o => o.status !== 'archived').length;
+  const archivedCount = state.orders.length - activeCount;
+  console.log(`LC backfill: 新增 ${toAdd.length} 筆，目前共 ${state.orders.length} 筆（active ${activeCount} / archived ${archivedCount}）`);
+  if (skipped.length) console.log(`跳過：`, skipped);
+  alert(`已從 LC 匯入歷史訂單：新增 ${toAdd.length} 筆\n（已存在的訂單不會被覆蓋）`);
+  renderSidebar();
+  renderOrdersTable();
+  autoGenerateTodayItems();
+  renderTodaySections();
+  if (document.querySelector('.page.active')?.id === 'page-archived') renderArchivedOrders();
+}
+
+// Backward-compat alias
+const deriveArchivedOrdersFromLC = deriveOrdersFromLC;
+
+async function reloadSheetsCache() {
+  if (!_accessToken) { alert('請先連結 Google'); return; }
+  try {
+    setSheetsLoadingStatus('重新載入中…');
+    await loadAllSheetsData();
+    setSheetsLoadingStatus(`已連結 · ${countSheetsRows()} 行資料`);
+    if (document.getElementById('qaModal').classList.contains('open')) {
+      qaSession.push({ type: 'sys', text: `🔄 已重新載入 Sheets（${countSheetsRows()} 行）` });
+      renderQAFeed();
+    }
+  } catch (e) {
+    setSheetsLoadingStatus('載入失敗');
+    alert('重新載入失敗：' + e.message);
+  }
+}
+
+// loadOrdersFromSheets defined below in LANDING COST section.
+
+// ════════════════════════════════════════════════════════
+// CLICK OUTSIDE → CLOSE QA DROPDOWN
+// ════════════════════════════════════════════════════════
+
+document.addEventListener('click', (e) => {
+  const row = document.querySelector('.chat-input-row');
+  if (row && !row.contains(e.target)) {
+    qaOpen = false;
+    document.getElementById('qaDropdown')?.classList.remove('open');
+    document.getElementById('qaChev') && (document.getElementById('qaChev').textContent = '▾');
+  }
+});
+</script>
+</body>
+</html>
