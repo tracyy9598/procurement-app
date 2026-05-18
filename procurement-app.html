@@ -1083,7 +1083,6 @@ input, textarea { font-family: var(--font); }
            onclick="openQAModal('')">
     <div class="topbar-right">
       <button class="topbar-badge" id="gAuthBtn" onclick="toggleGoogleAuth()" style="cursor:pointer;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);">🔒 連結 Google</button>
-      <button class="topbar-badge" onclick="openSettingsModal()" style="cursor:pointer;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);" title="API 設定">⚙</button>
       <span class="topbar-badge" id="pendingBadge">2 項待確認</span>
       <span class="topbar-date" id="topbarDate"></span>
     </div>
@@ -1108,7 +1107,6 @@ input, textarea { font-family: var(--font); }
 
       <div style="padding: 4px 8px 8px;">
         <button class="btn-new-order" onclick="openNewOrderModal()">＋ 新增訂單</button>
-        <button class="btn" style="width:100%;margin-top:4px;font-size:10px;color:var(--ink-3);" onclick="confirmBackfillFromLC()" title="一次性：把 LC sheet 裡所有 T 開頭 tab 倒過來建立訂單條目（已刪除的不會復活）">⬇ 從 LC 匯入歷史（一次性）</button>
       </div>
 
       <div class="sb-divider"></div>
